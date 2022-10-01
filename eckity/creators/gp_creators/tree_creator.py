@@ -2,7 +2,7 @@ from eckity.creators.creator import Creator
 from eckity.fitness.simple_fitness import SimpleFitness
 from eckity.genetic_encodings.gp.tree.functions import f_add, f_sub, f_mul, f_div
 from eckity.fitness.gp_fitness import GPFitness
-from eckity.genetic_encodings.gp.tree.tree_node_individual import Tree
+from eckity.genetic_encodings.gp.tree.tree_typed_node_individual import Tree
 
 from abc import abstractmethod
 
@@ -24,10 +24,11 @@ class GPTreeCreator(Creator):
 			init_depth = (2, 4)
 
 		if function_set is None:
-			function_set = [f_add, f_sub, f_mul, f_div]
+			function_set = [(f_add, [int, int], int), (f_sub, [int, int], int),
+                            (f_mul, [int, int], int), (f_div, [int, int], int)]
 
 		if terminal_set is None:
-			terminal_set = ['x', 'y', 'z', 0, 1, -1]
+			terminal_set = [('x', int), ('y', int), ('z', int), (0, int), (1, int), (-1, int)]
 
 		self.init_depth = init_depth
 		self.function_set = function_set

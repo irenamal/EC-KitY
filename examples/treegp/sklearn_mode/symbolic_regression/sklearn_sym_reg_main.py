@@ -25,6 +25,8 @@ from eckity.subpopulation import Subpopulation
 from eckity.termination_checkers.threshold_from_target_termination_checker import ThresholdFromTargetTerminationChecker
 from eckity.sklearn_compatible.regression_evaluator import RegressionEvaluator
 
+TYPED = True
+
 
 # Adding your own functions
 def f_add3(x1, x2, x3):
@@ -109,10 +111,17 @@ def main():
 
     # Automatically generate a terminal set.
     # Since there are 5 features, set terminal_set to: ['x0', 'x1', 'x2', 'x3', 'x4']
-    terminal_set = create_terminal_set(X)
+    if TYPED:
+        _terminal_set = create_terminal_set(X)
+        terminal_set = [(i, float) for i in _terminal_set]
+    else:
+        terminal_set = create_terminal_set(X)
 
     # Set function set to binary addition, binary multiplication and binary subtraction
-    function_set = [f_add, f_mul, f_sub]
+    if TYPED:
+        function_set = [(f_add, [float, float], float), (f_mul, [float, float], float), (f_sub, [float, float], float)]
+    else:
+        function_set = [f_add, f_mul, f_sub]
 
     # Initialize Simple Evolutionary Algorithm instance
     algo = SimpleEvolution(

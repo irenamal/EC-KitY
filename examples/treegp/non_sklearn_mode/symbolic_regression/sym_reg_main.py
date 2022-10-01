@@ -16,6 +16,8 @@ from eckity.subpopulation import Subpopulation
 from eckity.termination_checkers.threshold_from_target_termination_checker import ThresholdFromTargetTerminationChecker
 from examples.treegp.non_sklearn_mode.symbolic_regression.sym_reg_evaluator import SymbolicRegressionEvaluator
 
+TYPED = True
+
 
 def main():
     """
@@ -38,10 +40,19 @@ def main():
 
     # each node of the GP tree is either a terminal or a function
     # function nodes, each has two children (which are its operands)
-    function_set = [f_add, f_mul, f_sub, f_div, f_sqrt, f_log, f_abs, f_max, f_min, f_inv, f_neg]
+    if TYPED:
+        function_set = [(f_add, [int, int], int), (f_mul, [int, int], int), (f_sub, [int, int], int),
+                        (f_div, [int, int], float), (f_sqrt, [int], float), (f_log, [int], float),
+                        (f_abs, [int], int), (f_max, [int, int], int), (f_min, [int, int], int),
+                        (f_inv, [float], float), (f_neg, [int], int)]
+    else:
+        function_set = [f_add, f_mul, f_sub, f_div, f_sqrt, f_log, f_abs, f_max, f_min, f_inv, f_neg]
 
     # terminal set, consisted of variables and constants
-    terminal_set = ['x', 'y', 'z', 0, 1, -1]
+    if TYPED:
+        terminal_set = [('x', int), ('y', int), ('z', int), (0, int), (1, float), (-1, int)]
+    else:
+        terminal_set = ['x', 'y', 'z', 0, 1, -1]
 
     # Initialize the evolutionary algorithm
     algo = SimpleEvolution(

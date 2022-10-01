@@ -2,7 +2,7 @@ from time import time
 
 from eckity.algorithms.simple_evolution import SimpleEvolution
 from eckity.breeders.simple_breeder import SimpleBreeder
-from eckity.creators.gp_creators.full import FullCreator
+from eckity.creators.gp_creators.full_typed import FullCreator
 from eckity.genetic_encodings.gp.tree.functions import f_and, f_or, f_not, f_if_then_else
 from eckity.genetic_operators.crossovers.subtree_crossover import SubtreeCrossover
 from eckity.genetic_operators.mutations.subtree_mutation import SubtreeMutation
@@ -12,6 +12,8 @@ from eckity.subpopulation import Subpopulation
 from eckity.termination_checkers.threshold_from_target_termination_checker import ThresholdFromTargetTerminationChecker
 from examples.treegp.non_sklearn_mode.multiplexer.mux_evaluator \
     import MuxEvaluator, NUM_SELECT_ENTRIES, NUM_INPUT_ENTRIES
+
+TYPED = True
 
 
 def main():
@@ -186,12 +188,21 @@ def main():
 
     # The terminal set of the tree will contain the mux inputs (d0-d7 in a 8-3 mux gate),
     # 3 select lines (s0-s2 in a 8-3 mux gate) and the constants 0 and 1
-    select_terminals = [f's{i}' for i in range(NUM_SELECT_ENTRIES)]
-    input_terminals = [f'd{i}' for i in range(NUM_INPUT_ENTRIES)]
-    terminal_set = select_terminals + input_terminals + [0, 1]
+    if TYPED:
+        select_terminals = [(f's{i}', bool) for i in range(NUM_SELECT_ENTRIES)]
+        input_terminals = [(f'd{i}', bool) for i in range(NUM_INPUT_ENTRIES)]
+        terminal_set = select_terminals + input_terminals + [(0, bool), (1, bool)]
+    else:
+        select_terminals = [f's{i}' for i in range(NUM_SELECT_ENTRIES)]
+        input_terminals = [f'd{i}' for i in range(NUM_INPUT_ENTRIES)]
+        terminal_set = select_terminals + input_terminals + [0, 1]
 
     # Logical functions: and, or, not and if-then-else
-    function_set = [f_and, f_or, f_not, f_if_then_else]
+    if TYPED:
+        function_set = [(f_and, [bool, bool], bool), (f_or, [bool, bool], bool), (f_not, [bool], bool),
+                        (f_if_then_else, [bool, bool, bool], bool)]
+    else:
+        function_set = [f_and, f_or, f_not, f_if_then_else]
 
     # Initialize SimpleEvolution instance
     algo = SimpleEvolution(

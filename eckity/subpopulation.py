@@ -2,7 +2,7 @@ import random
 import numpy as np
 
 from eckity.creators.creator import Creator
-from eckity.creators.gp_creators.full import FullCreator
+from eckity.creators.gp_creators.full_typed import FullCreator
 
 from eckity.genetic_operators.crossovers.subtree_crossover import SubtreeCrossover
 from eckity.genetic_operators.mutations.erc_mutation import ERCMutation

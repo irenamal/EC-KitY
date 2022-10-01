@@ -1,7 +1,7 @@
-from eckity.creators.gp_creators.full import FullCreator
-from eckity.creators.gp_creators.grow import GrowCreator
+from eckity.creators.gp_creators.full_typed import FullCreator
+from eckity.creators.gp_creators.grow_typed import GrowCreator
 from eckity.creators.gp_creators.tree_creator import GPTreeCreator
-from eckity.genetic_encodings.gp.tree.tree_node_individual import Tree
+from eckity.genetic_encodings.gp.tree.tree_typed_node_individual import Tree
 from eckity.fitness.gp_fitness import GPFitness
 
 
@@ -24,7 +24,7 @@ class RampedHalfAndHalfCreator(GPTreeCreator):
 			a tree creator that creates trees using the grow method
 
 		full_creator: FullCreator
-			a tree creator that creates trees using the full method
+			a tree creator that creates trees using the grow method
 
 		init_depth : (int, int)
 		Min and max depths of initial random trees. The default is None.

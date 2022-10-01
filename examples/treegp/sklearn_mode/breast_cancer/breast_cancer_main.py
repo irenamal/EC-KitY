@@ -25,6 +25,8 @@ from eckity.termination_checkers.threshold_from_target_termination_checker impor
 # Adding your own functions
 from eckity.sklearn_compatible.classification_evaluator import ClassificationEvaluator
 
+TYPED = True
+
 
 def main():
     """
@@ -87,10 +89,20 @@ def main():
 
     # Automatically generate a terminal set.
     # Since there are 5 features, set terminal_set to: ['x0', 'x1', 'x2', ..., 'x9']
-    terminal_set = create_terminal_set(X)
+    if TYPED:
+        _terminal_set = create_terminal_set(X)
+        terminal_set = [(i, float) for i in _terminal_set]
+    else:
+        terminal_set = create_terminal_set(X)
 
     # Define function set
-    function_set = [f_add, f_mul, f_sub, f_div, f_sqrt, f_log, f_abs, f_neg, f_inv, f_max, f_min]
+    if TYPED:
+        function_set = [(f_add, [float, float], float), (f_mul, [float, float], float), (f_sub, [float, float], float),
+                        (f_div, [float, float], float), (f_sqrt, [float], float), (f_log, [float], float),
+                        (f_abs, [float], float), (f_max, [float, float], float), (f_min, [float, float], float),
+                        (f_inv, [float], float), (f_neg, [float], float)]
+    else:
+        function_set = [f_add, f_mul, f_sub, f_div, f_sqrt, f_log, f_abs, f_neg, f_inv, f_max, f_min]
 
     # Initialize SimpleEvolution instance
     algo = SimpleEvolution(
