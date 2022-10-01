@@ -2,7 +2,7 @@ from eckity.creators.creator import Creator
 from eckity.fitness.simple_fitness import SimpleFitness
 from eckity.genetic_encodings.gp.tree.functions import f_add, f_sub, f_mul, f_div
 from eckity.fitness.gp_fitness import GPFitness
-from eckity.genetic_encodings.gp.tree.tree_individual import Tree
+from eckity.genetic_encodings.gp.tree.tree_node_individual import Tree
 
 from abc import abstractmethod
 

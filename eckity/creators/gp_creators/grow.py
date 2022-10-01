@@ -93,5 +93,5 @@ class GrowCreator(GPTreeCreator):
 
 		if is_func:
 			# recursively add arguments to the function node, according to its arity
-			for i in range(tree_ind.arity[node]):
+			for i in range(node.num_of_descendants):
 				self._create_tree(tree_ind, max_depth, depth=depth + 1)

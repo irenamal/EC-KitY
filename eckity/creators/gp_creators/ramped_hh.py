@@ -1,7 +1,7 @@
 from eckity.creators.gp_creators.full import FullCreator
 from eckity.creators.gp_creators.grow import GrowCreator
 from eckity.creators.gp_creators.tree_creator import GPTreeCreator
-from eckity.genetic_encodings.gp.tree.tree_individual import Tree
+from eckity.genetic_encodings.gp.tree.tree_node_individual import Tree
 from eckity.fitness.gp_fitness import GPFitness
 
 
