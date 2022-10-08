@@ -12,7 +12,7 @@ from eckity.subpopulation import Subpopulation
 from eckity.termination_checkers.threshold_from_target_termination_checker import ThresholdFromTargetTerminationChecker
 from examples.treegp.non_sklearn_mode.assembly_code_generation.assembly_evaluator import AssemblyEvaluator
 
-from eckity.genetic_encodings.gp.tree.assembly_parameters import *
+from examples.treegp.non_sklearn_mode.assembly_code_generation.assembly_parameters import *
 TYPED = True
 
 
@@ -23,18 +23,32 @@ def main():
     # The terminal set of the tree will contain the mux inputs (d0-d7 in a 8-3 mux gate),
     # 3 select lines (s0-s2 in a 8-3 mux gate) and the constants 0 and 1
     if TYPED:
-        terminal_set = [(reg, "reg") for reg in general_registers] + [(const, "const") for const in consts]
+        terminal_set = [(reg, "reg") for reg in general_registers] +\
+                       [(const, "const") for const in consts] + \
+                       [(label, "label") for label in labels]
         random.shuffle(terminal_set)
 
     # Logical functions: and, or, not and if-then-else
     if TYPED:
-        function_set = [(func, ["reg", None], None) for func in functions_with_one_operand] + \
-                       [(func, ["reg", "reg", None], None) for func in functions_with_two_operands] + \
-                       [(func, ["reg", "const"], None) for func in functions_with_two_operands] + \
-                       [(func, ["reg"], None) for func in functions_with_one_operand] + \
-                       [(func, ["reg", "reg"], None) for func in functions_with_two_operands] + \
-                       [(func, ["reg", "const", None], None) for func in functions_with_two_operands]
+        function_set = [(func, ["reg", None], None) for func in one_op] + \
+                       [(func, ["reg", "reg", None], None) for func in two_op_regs] + \
+                       [(func, ["reg", "const", None], None) for func in two_op_reg_const] + \
+                       [(func, ["label", None], None) for func in jumps] + \
+                       [(func, ["reg"], None) for func in one_op] + \
+                       [(func, ["reg", "reg"], None) for func in two_op_regs] + \
+                       [(func, ["reg", "const"], None) for func in two_op_reg_const] + \
+                       [(func, ["label"], None) for func in jumps]
+
         random.shuffle(function_set)
+        # function_set = [(func, ["reg", None], None) for func in functions_with_one_operand] + \
+        # [(func, ["reg", "reg", None], None) for func in functions_with_two_operands] + \
+        # [(func, ["reg", "const"], None) for func in functions_with_two_operands] + \
+        # [(func, ["label", "reg", None], None) for func in labeled_functions_with_one_operand] + \
+        # [(func, ["label", None], None) for func in jumps] + \
+        # [(func, ["reg"], None) for func in functions_with_one_operand] + \
+        # [(func, ["reg", "reg"], None) for func in functions_with_two_operands] + \
+        # [(func, ["reg", "const", None], None) for func in functions_with_two_operands]
+        # [(put_label, ["label", None], None)] + \
 
     # Initialize SimpleEvolution instance
     algo = SimpleEvolution(
