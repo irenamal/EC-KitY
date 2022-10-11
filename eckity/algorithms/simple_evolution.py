@@ -92,7 +92,7 @@ class SimpleEvolution(Algorithm):
 				 best_of_gen=None,
 				 worst_of_gen=None,
 				 generation_num=0):
-		
+
 		if event_names is None:
 			_event_names = ['before_eval', 'after_eval', 'before_breeding', 'after_breeding']
 		else:
@@ -167,19 +167,17 @@ class SimpleEvolution(Algorithm):
 		object
 			Output as computed by the best individual of the evolutionary run.
 
-		"""
-		return self.best_of_run_.execute(**kwargs)
+        """
+        print("\nThe winner:")
+        return self.best_of_run_.execute(**kwargs)
 
-
-	def finish(self):
-		"""
-		Finish the evolutionary run by showing the best individual and printing the best fitness
-		"""
-		# todo should move to finisher
-		self.best_of_run_.show()
-
-	def get_individual_evaluator(self):
-		return self.population.sub_populations[0].evaluator
+    def finish(self):
+        """
+        Finish the evolutionary run by showing the best individual and printing the best fitness
+        """
+        # todo should move to finisher
+        self.best_of_run_.show()
+        print("The best fitness: " + str(self.best_of_run_.get_pure_fitness()))
 
 	def get_average_fitness(self):  # TODO check if it should be here or register statistic to breeder or sub pop
 		return self.population.get_average_fitness()
@@ -204,4 +202,3 @@ class SimpleEvolution(Algorithm):
 			"best_of_gen": self.best_of_gen,
 			"generation_num": self.generation_num
 		}
-	

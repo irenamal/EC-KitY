@@ -14,6 +14,8 @@ from eckity.genetic_encodings.gp.tree.functions import f_add, f_sub, f_mul, f_di
 
 from eckity.genetic_encodings.gp.tree.tree_node import FunctionNode, TerminalNode
 
+import itertools
+
 
 class Tree(Individual):
     """
@@ -38,6 +40,8 @@ class Tree(Individual):
     erc_range : (float, float)
         Range of values for ephemeral random constant (ERC). The default is None.
     """
+    id_iter = itertools.count()
+
     def __init__(self,
                  fitness,
                  function_set=None,
@@ -68,6 +72,7 @@ class Tree(Individual):
         self.n_functions = len(self.function_set)
         self.init_depth = init_depth
         self.tree = []
+        self.id = next(self.id_iter)
 
     def size(self):
         """
