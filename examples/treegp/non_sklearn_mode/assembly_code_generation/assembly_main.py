@@ -1,5 +1,6 @@
 import random
 from time import time
+import sys
 
 from eckity.algorithms.simple_evolution import SimpleEvolution
 from eckity.breeders.simple_breeder import SimpleBreeder
@@ -22,43 +23,54 @@ def main():
 
     if TYPED:
         terminal_set = [(reg, "reg") for reg in general_registers] + \
+                       [(reg, "address") for reg in addressing_registers] + \
                        [(const, "const") for const in consts]
 
         random.shuffle(terminal_set)
 
     if TYPED:
-        function_set = [(statement1, ["label", "instruction", "backwards_jmp", "statement"], "statement"),
-                        (statement2, ["forward_jmp", "instruction", "label", "statement"], "statement"),
-                        (statement3, ["instruction", "statement"], "statement"),
-                        (statement4, ["instruction"], "statement")] * 25 + \
-                       [(func, ["reg", "instruction"], "instruction") for func in one_op] + \
-                       [(func, ["reg", "reg", "instruction"], "instruction") for func in two_op_regs] + \
-                       [(func, ["reg", "const", "instruction"], "instruction") for func in two_op_regs] + \
-                       [(func, ["reg"], "instruction") for func in one_op] + \
-                       [(func, ["reg", "reg"], "instruction") for func in two_op_regs] + \
-                       [(func, ["reg", "const"], "instruction") for func in two_op_regs] + \
-                       [(func, [], "forward_jmp") for func in forward_jumps] + \
-                       [(func, [], "backwards_jmp") for func in backwards_jumps] + \
+        function_set = [(section, ["label", "section", "backwards_jmp", "section"], "section")] * 5 + \
+                       [(section, ["section", "forward_jmp", "section", "label", "section"], "section")] * 5 + \
+                       [(section, ["instruction", "section"], "section")] * 20 + \
+                       [(section, ["instruction"], "section")] * 15 + \
+                       [(lambda dst, src, *args, opcode=opcode: print("{} {},{}".format(opcode, dst, src)),
+                         ["reg", "reg"], "instruction") for opcode in opcodes_reg_reg] + \
+                       [(lambda dst, src, *args, opcode=opcode: print("{} {},{}".format(opcode, dst, src)),
+                         ["reg", "const"], "instruction") for opcode in opcodes_reg_const] + \
+                       [(lambda dst, src, *args, opcode=opcode: print("{} {},{}".format(opcode, dst, src)),
+                         ["reg", "address"], "instruction") for opcode in opcodes_reg_address] + \
+                       [(lambda dst, src, *args, opcode=opcode: print("{} {},{}".format(opcode, dst, src)),
+                         ["address", "reg"], "instruction") for opcode in opcodes_address_reg] + \
+                       [(lambda dst, src, *args, opcode=opcode: print("{} {},{}".format(opcode, dst, src)),
+                         ["address", "const"], "instruction") for opcode in opcodes_address_const] + \
+                       [(lambda op, *args, opcode=opcode: print("{} {}".format(opcode, op)),
+                         ["reg"], "instruction") for opcode in opcodes_reg] + \
+                       [(lambda op, *args, opcode=opcode: print("{} {}".format(opcode, op)),
+                         ["address"], "instruction") for opcode in opcodes_address] + \
+                       [(lambda *args, opcode=opcode: print("{} l{}".format(opcode, len(labels))), [], "forward_jmp")
+                        for opcode in opcodes_jump] + \
+                       [(lambda *args, opcode=opcode: print("{} l{}".format(opcode, len(labels)-1)), [], "backwards_jmp")
+                        for opcode in opcodes_jump] + \
                        [(put_label, [], "label")] * 10
 
         random.shuffle(function_set)
 
     # Initialize SimpleEvolution instance
     algo = SimpleEvolution(
-        Subpopulation(creators=GrowCreator(init_depth=(1, 50),
+        Subpopulation(creators=GrowCreator(init_depth=(1, 30),
                                            terminal_set=terminal_set,
                                            function_set=function_set,
                                            bloat_weight=0.00001),
-                      population_size=20,
+                      population_size=50,
                       # user-defined fitness evaluation method
                       evaluator=AssemblyEvaluator(),
                       # this is a maximization problem (fitness is accuracy), so higher fitness is better
                       higher_is_better=True,
-                      elitism_rate=0.0,
+                      elitism_rate=0.01,
                       # genetic operators sequence to be applied in each generation
                       operators_sequence=[
                           SubtreeCrossover(probability=0.8, arity=2),
-                          SubtreeMutation(probability=0.2, arity=1)
+                          SubtreeMutation(probability=0.4, arity=1)
                       ],
                       selection_methods=[
                           # (selection method, selection probability) tuple
@@ -68,7 +80,7 @@ def main():
         breeder=SimpleBreeder(),
         max_workers=1,
         max_generation=15,
-        termination_checker=ThresholdFromTargetTerminationChecker(optimal=1, threshold=0.01),
+        termination_checker=ThresholdFromTargetTerminationChecker(optimal=7, threshold=0.01),
         statistics=BestAverageWorstStatistics(),
         random_seed=10
     )
@@ -77,7 +89,10 @@ def main():
     algo.evolve()
 
     # execute the best individual after the evolution process ends
-    exec1 = algo.execute(ax="ax", bx="bx", cx="cx", dx="dx")
+    original_stdout = sys.stdout
+    with open('winners\\'+str(time())+'.asm', 'w+') as sys.stdout:
+        algo.execute(ax="ax", bx="bx", cx="cx", dx="dx", abx="[bx]", asi="[si]", adi="[di]")
+    sys.stdout = original_stdout
 
     print('total time:', time() - start_time)
 

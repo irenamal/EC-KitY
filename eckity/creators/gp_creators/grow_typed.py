@@ -58,13 +58,14 @@ class GrowCreator(GPTreeCreator):
         -------
         None.
         """
-        for i in range(100):
-            if i == 99:
+        for i in range(self.range_size + 1):
+            if i == self.range_size:
                 raise ValueError(f'Couldn\'t create tree. Check matching terminal types to parameter\'s types.')
             elif self._create_tree(tree_ind, max_depth, 0):
                 break
             else:
                 tree_ind.empty_tree()
+                print("empty")
 
     def _create_tree(self, tree_ind, max_depth=5, depth=0):
         """

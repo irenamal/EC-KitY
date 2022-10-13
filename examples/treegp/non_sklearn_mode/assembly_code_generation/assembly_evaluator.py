@@ -38,7 +38,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         with open(file_path, 'w+') as f:
             f.write("@start:\n")
             sys.stdout = f
-            individual.execute(ax="ax", bx="bx", cx="cx", dx="dx")
+            individual.execute(ax="ax", bx="bx", cx="cx", dx="dx", abx="[bx]", asi="[si]", adi="[di]")
             sys.stdout = original_stdout
             f.write("@end:")
         f.close()
@@ -47,20 +47,27 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
         if "error" in str(stderr):
+            print(stderr)
             return -1  # fitness = -1
 
-        print(individual_name)
         os.system("cd corewars8086 & cgx.bat")
         os.remove(self.survivors_path + individual_name)
+
         # open scores.csv and get the survivors score in comparison to others
         score = 0
+        all_scores = []
+        flag = False
         with open("corewars8086\\scores.csv") as scores:
             scores = scores.readlines()
             for line in scores:
-                line = line.split(',')
-                if len(line) < 2:
+                if line == "Warriors:\n":
+                    flag = True
                     continue
-                if line[0] == individual_name:
-                    score = float(line[1][:-1])
-
-        return score
+                if flag:
+                    line = line.split(',')
+                    if line[0] == individual_name:
+                        score = float(line[1][:-1])
+                    all_scores.append(float(line[1][:-1]))
+        all_scores.sort()
+        print("{} score: {}".format(individual_name, all_scores.index(score) * (score/sum(all_scores))))
+        return all_scores.index(score) * (score/sum(all_scores))  # how many did the survivor beat * its partial score?
