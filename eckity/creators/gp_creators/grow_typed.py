@@ -38,7 +38,7 @@ class GrowCreator(GPTreeCreator):
         """
         super().__init__(init_depth=init_depth, function_set=function_set, terminal_set=terminal_set,
                          erc_range=erc_range, bloat_weight=bloat_weight, events=events)
-        self.range_size = len(terminal_set) + len(function_set)
+        self.range_size = 2 * (len(terminal_set) + len(function_set))
 
     @overrides
     def create_tree(self, tree_ind, max_depth=5):

@@ -1,20 +1,19 @@
-opcodes_reg_reg = ["cmp", "mov", "xchg", "add", "sub", "and", "or", "xor"]
-opcodes_reg_const = ["cmp", "mov", "add", "sub", "and", "or", "xor", "sal", "sar"]
-opcodes_const_reg = []
-opcodes_reg_address = ["cmp", "mov", "lea", "add", "sub", "and", "or", "xor"]
-opcodes_address_reg = ["cmp", "mov", "add", "sub", "and", "or", "xor"]
-opcodes_const_address = []
-opcodes_address_const = ["mov WORD", "add WORD", "sub WORD", "and WORD", "or WORD", "xor WORD", "sal WORD", "sar WORD"]
-opcodes_address_address = []
-opcodes_reg = ["inc", "dec", "imul", "idiv", "not", "neg"]
-opcodes_address = ["inc WORD", "dec WORD", "imul WORD", "idiv WORD", "not WORD", "neg WORD"]
-opcodes_jump = ["jmp", "je", "jz", "jcxz", "jne", "jp", "jpe", "jnz"]  # , "jecxz", "jnp", "jpo"]
-# "ja", "jae", "jb", "jbe", "jna", "jnae", "jnb", "jnbe", "jc", "jnc"]
-
-general_registers = ["ax", "bx", "cx", "dx"]  # "sp", "bp", "ss", "cs", "ds", "es"
-addressing_registers = ["abx", "asi", "adi"]  # bp
+opcodes_no_operands = ["nop", "stosb", "stosw", "lodsb", "lodsw", "movsb", "movsw", "ret"]
+opcodes_special = ["wait\nwait\nwait\nwait", "wait\nwait", "int 0x86", "int 0x87"]  # "nrg"=wait wait
+opcodes_repeats = ["rep", "repe", "repz"]  # , "repne", "repnz"]
+opcodes_jump = ["jmp", "jcxz", "je", "jne", "jp", "jnp", "jo", "jno", "jc", "jnc"]
+# , "ja", "jna", "js", "jns", "jl", "jnl", "jle", "jnle"]
+opcodes_double = ["cmp", "mov", "add", "sub", "and", "or", "xor"]
+opcodes_single = ["inc", "dec", "not", "neg", "push", "pop"]
+opcodes_function = ["call", "call near", "call far"]
+# specials: xchg, sal, sar, lea
+# not supported: jecxz, imul, idiv, push const, repnz and repnz with s/l/m
+general_registers = ["ax", "bx", "cx", "dx"]  # sp
+pop_registers = ["ds", "es", "ss"]
+push_registers = ["cs", "ss", "ds", "es"]
+addressing_registers = ["[bx]", "[si]", "[di]", "[bp]"]
 labels = []
-consts = [0xCC, 512, 1024, 2048] + [i for i in range(0, 10)]  # 65535
+consts = [str(2*i) for i in range(-10, 10)] + ["(@start-@end)"]  # 65535
 
 
 def put_label(*args):

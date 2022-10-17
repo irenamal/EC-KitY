@@ -67,7 +67,7 @@ class Tree(Individual):
             self.terminal_set = terminal_set
 
         self.n_terminals = len(terminal_set)
-        self.vars = [t[0] for t in self.terminal_set if not isinstance(t[0], Number)]
+        self.vars = []  # [t[0] for t in self.terminal_set if not isinstance(t[0], Number)]
         self.erc_range = erc_range
         self.n_functions = len(self.function_set)
         self.init_depth = init_depth
@@ -172,10 +172,7 @@ class Tree(Individual):
                 arglist.append(res)
             return node.function(*arglist)
         else:  # terminal
-            if isinstance(node.value, Number):  # terminal is a constant
-                return node.value
-            else:  # terminal is a variable, return its value
-                return kwargs[node.value]
+            return node.value
 
     def execute(self, *args, **kwargs):
         """

@@ -38,7 +38,8 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         with open(file_path, 'w+') as f:
             f.write("@start:\n")
             sys.stdout = f
-            individual.execute(ax="ax", bx="bx", cx="cx", dx="dx", abx="[bx]", asi="[si]", adi="[di]")
+            individual.execute() #ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
+                               #abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
             sys.stdout = original_stdout
             f.write("@end:")
         f.close()
@@ -69,5 +70,5 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                         score = float(line[1][:-1])
                     all_scores.append(float(line[1][:-1]))
         all_scores.sort()
-        print("{} score: {}".format(individual_name, all_scores.index(score) * (score/sum(all_scores))))
-        return all_scores.index(score) * (score/sum(all_scores))  # how many did the survivor beat * its partial score?
+        print("{} score: {}".format(individual_name, all_scores.index(score) + (score/sum(all_scores))))
+        return all_scores.index(score) + (score/sum(all_scores))  # how many did the survivor beat * its partial score?
