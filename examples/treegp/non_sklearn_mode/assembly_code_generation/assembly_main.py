@@ -44,15 +44,14 @@ def main():
                        [(section, ["label", "section", "backwards_jmp"], "section")] * 2 + \
                        [(section, ["section", "forward_jmp", "section", "label", "section"], "section")] * 2 + \
                        [(section, ["section", "section"], "section")] * 3 + \
-                       [(section, [], "section")]  + \
                        [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
                          ["op_double", "reg", "reg", "section"], "section")] + \
                        [(lambda dst, src, *args: print("{} {},{}".format("xchg", dst, src)),
-                         ["reg", "reg"], "section")] + \
+                         ["reg", "reg", "section"], "section")] + \
                        [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
                          ["op_double", "reg", "const", "section"], "section")] + \
                        [(lambda dst, *args, opcode=opcode: print("{} {},{}".format(opcode, dst, 1)),
-                         ["reg"], "section") for opcode in ["sal", "sar"]] + \
+                         ["reg", "section"], "section") for opcode in ["sal", "sar"]] + \
                        [(lambda dst, *args, opcode=opcode: print("{} {},{}".format(opcode, dst, "cl")),
                          ["reg", "section"], "section") for opcode in ["sal", "sar"]] + \
                        [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
@@ -60,7 +59,7 @@ def main():
                        [(lambda dst, src, *args: print("{} {},{}".format("lea", dst, src)),
                          ["reg", "address", "section"], "section")] + \
                        [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
-                         ["op_double", "address", "reg"], "section")] + \
+                         ["op_double", "address", "reg", "section"], "section")] + \
                        [(lambda opcode, dst, src, *args: print("{} {} {},{}".format(opcode, "WORD", dst, src)),
                          ["op_double", "address", "const", "section"], "section")] + \
                        [(lambda dst, *args, opcode=opcode: print("{} {} {},{}".format(opcode, "WORD", dst, 1)),
@@ -70,14 +69,14 @@ def main():
                        [(lambda opcode, op, *args: print("{} {}".format(opcode, op)),
                          ["op_single", "reg", "section"], "section")] + \
                        [(lambda opcode, op, *args: print("{} {} {}".format(opcode, "WORD", op)),
-                         ["op_single", "address"], "section")] + \
+                         ["op_single", "address", "section"], "section")] + \
                        [(lambda opcode, op, *args: print("{} {}".format(opcode, op)),
-                         ["op_function", "address"], "section")] + \
+                         ["op_function", "address"], "section")] * 3 + \
                        [(lambda opcode, *args: print("{}".format(opcode)), ["op", "section"], "section")] + \
-                       [(lambda opcode, *args: print("{}".format(opcode)), ["op_special"], "section")] + \
+                       [(lambda opcode, *args: print("{}".format(opcode)), ["op_special", "section"], "section")] + \
                        [(lambda rep, opcode, *args: print("{} {}".format(rep, opcode)),
                          ["op_rep", "op"], "section")] + \
-                       [(lambda op, *args: print("{} {}".format("push", op)), ["push_reg"], "section")] + \
+                       [(lambda op, *args: print("{} {}".format("push", op)), ["push_reg", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("push", op)), ["reg"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("pop", op)), ["pop_reg", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("pop", op)), ["reg", "section"], "section")] + \
@@ -97,7 +96,7 @@ def main():
                                            terminal_set=terminal_set,
                                            function_set=function_set,
                                            bloat_weight=0.00001),
-                      population_size=100,
+                      population_size=200,
                       # user-defined fitness evaluation method
                       evaluator=AssemblyEvaluator(),
                       # this is a maximization problem (fitness is accuracy), so higher fitness is better
@@ -106,7 +105,7 @@ def main():
                       # genetic operators sequence to be applied in each generation
                       operators_sequence=[
                           SubtreeCrossover(probability=0.8, arity=2),
-                          SubtreeMutation(probability=0.4, arity=1),
+                          #SubtreeMutation(probability=0.4, arity=1),
                           ERCMutation(probability=0.05, arity=1)
                       ],
                       selection_methods=[
@@ -116,8 +115,8 @@ def main():
                       ),
         breeder=SimpleBreeder(),
         max_workers=1,
-        max_generation=10,
-        termination_checker=ThresholdFromTargetTerminationChecker(optimal=8, threshold=0.01),
+        max_generation=40,
+        termination_checker=ThresholdFromTargetTerminationChecker(optimal=5, threshold=0.01),
         statistics=BestAverageWorstStatistics(),
         random_seed=10
     )

@@ -4,7 +4,7 @@ opcodes_repeats = ["rep", "repe", "repz"]  # , "repne", "repnz"]
 opcodes_jump = ["jmp", "jcxz", "je", "jne", "jp", "jnp", "jo", "jno", "jc", "jnc"]
 # , "ja", "jna", "js", "jns", "jl", "jnl", "jle", "jnle"]
 opcodes_double = ["cmp", "mov", "add", "sub", "and", "or", "xor"]
-opcodes_single = ["inc", "dec", "not", "neg", "push", "pop"]
+opcodes_single = ["div", "mul", "inc", "dec", "not", "neg", "push", "pop"]
 opcodes_function = ["call", "call near", "call far"]
 # specials: xchg, sal, sar, lea
 # not supported: jecxz, imul, idiv, push const, repnz and repnz with s/l/m

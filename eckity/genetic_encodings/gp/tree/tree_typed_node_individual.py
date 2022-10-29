@@ -1,6 +1,7 @@
 """
 This module implements the tree class.
 """
+import collections
 
 import numpy as np
 from numbers import Number
@@ -73,6 +74,7 @@ class Tree(Individual):
         self.init_depth = init_depth
         self.tree = []
         self.id = next(self.id_iter)
+        self.partners = []
 
     def size(self):
         """
@@ -307,4 +309,17 @@ class Tree(Individual):
         """
         self._show("", [0])
 
+    def add_partner(self, name, fitness):
+        for partner in self.partners:
+            if partner[0] == name:
+                self.partners.remove(partner)
+                break
+        self.partners.append((name, fitness))
+
+    def get_best_partner(self):
+        self.partners.sort(key=lambda x: x[1])
+        return self.partners[len(self.partners)-1]
+
+    def get_size_partners(self):
+        return len(self.partners)
 # end class tree
