@@ -33,13 +33,15 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
             The value ranges from 0 (worst case) to 1 (best case).
         """
 
-        individual_name = str(individual.id) + "try"
+        individual_name1 = str(individual.id) + "try1"
+        individual_name2 = str(individual.id) + "try2"
         original_stdout = sys.stdout
-        file_path = 'survivors\\' + individual_name + '.asm'
-        with open(file_path, 'w+') as f:
+        file_path1 = 'survivors\\' + individual_name1 + '.asm'
+        file_path2 = 'survivors\\' + individual_name2 + '.asm'
+        with open(file_path1, 'w+') as f:
             f.write("@start:\n")
             sys.stdout = f
-            individual.execute() #ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
+            individual.execute1() #ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
                                #abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
             sys.stdout = original_stdout
             f.write("@end:\n")
@@ -49,29 +51,36 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                 f.seek(0, os.SEEK_END)
         f.close()
 
-        proc = subprocess.Popen([self.nasm_path, "-f bin", file_path, "-o", self.survivors_path + individual_name + "1"],
+        with open(file_path2, 'w+') as f:
+            f.write("@start:\n")
+            sys.stdout = f
+            individual.execute2() #ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
+                               #abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
+            sys.stdout = original_stdout
+            f.write("@end:\n")
+            f.seek(0, os.SEEK_END)
+            while f.tell() < 512:
+                f.write("db 0xC0\n")
+                f.seek(0, os.SEEK_END)
+        f.close()
+
+        proc = subprocess.Popen([self.nasm_path, "-f bin", file_path1, "-o", self.survivors_path + individual_name1],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
         if "error" in str(stderr):
             print(stderr)
             return -1  # fitness = -1
-
-        # choose a second warrior
-        stderr = "error"
-        partner = random.choice(os.listdir('survivors\\'))
-        while "error" in str(stderr):
-            if individual.get_size_partners() > 0 and random.random() > 0.5:
-                partner = individual.get_best_partner()[0]
-            else:
-                partner = random.choice(os.listdir('survivors\\'))
-            proc = subprocess.Popen([self.nasm_path, "-f bin", 'survivors\\' + partner, "-o",
-                                     self.survivors_path + individual_name + "2"],
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdout, stderr = proc.communicate()
+        proc = subprocess.Popen([self.nasm_path, "-f bin", file_path2, "-o", self.survivors_path + individual_name2],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
+        if "error" in str(stderr):
+            print(stderr)
+            os.remove(self.survivors_path + individual_name1)
+            return -1  # fitness = -1
 
         os.system("cd corewars8086 & cgx.bat")
-        os.remove(self.survivors_path + individual_name + "1")
-        os.remove(self.survivors_path + individual_name + "2")
+        os.remove(self.survivors_path + individual_name1)
+        os.remove(self.survivors_path + individual_name2)
 
         # open scores.csv and get the survivors score in comparison to others
         score = 0
@@ -84,11 +93,10 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                 if line == "\n":
                     break
                 line = line.split(',')
-                if line[0] == individual_name:
+                if line[0] == individual_name1[:-1]:
                     score = float(line[1][:-1])
                 all_scores.append(float(line[1][:-1]))
         all_scores.sort()
         fitness = all_scores.index(score) + (score/sum(all_scores))
-        individual.add_partner(partner, fitness)
-        print("{} and {} score: {}".format(individual_name, partner, fitness))
+        print("{} score: {}".format(individual_name1[:-1], fitness))
         return fitness  # how many did the survivor beat * its partial score?

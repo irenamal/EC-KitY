@@ -168,7 +168,7 @@ class SimpleEvolution(Algorithm):
 			Output as computed by the best individual of the evolutionary run.
 
         """
-        print("\nThe winner:")
+        print("The winner:")
         return self.best_of_run_.execute(**kwargs)
 
     def finish(self):

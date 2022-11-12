@@ -96,26 +96,26 @@ def main():
                                            terminal_set=terminal_set,
                                            function_set=function_set,
                                            bloat_weight=0.00001),
-                      population_size=200,
+                      population_size=50,
                       # user-defined fitness evaluation method
                       evaluator=AssemblyEvaluator(),
                       # this is a maximization problem (fitness is accuracy), so higher fitness is better
                       higher_is_better=True,
-                      elitism_rate=0.01,
+                      elitism_rate=0.05,
                       # genetic operators sequence to be applied in each generation
                       operators_sequence=[
                           SubtreeCrossover(probability=0.8, arity=2),
                           #SubtreeMutation(probability=0.4, arity=1),
-                          ERCMutation(probability=0.05, arity=1)
+                          #ERCMutation(probability=0.05, arity=1)
                       ],
                       selection_methods=[
                           # (selection method, selection probability) tuple
-                          (TournamentSelection(tournament_size=7, higher_is_better=True), 1)
+                          (TournamentSelection(tournament_size=4, higher_is_better=True), 1)
                       ]
                       ),
         breeder=SimpleBreeder(),
         max_workers=1,
-        max_generation=40,
+        max_generation=10,
         termination_checker=ThresholdFromTargetTerminationChecker(optimal=5, threshold=0.01),
         statistics=BestAverageWorstStatistics(),
         random_seed=10

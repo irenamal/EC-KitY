@@ -41,7 +41,7 @@ class Tree(Individual):
     erc_range : (float, float)
         Range of values for ephemeral random constant (ERC). The default is None.
     """
-    id_iter = itertools.count()
+    #id_iter = itertools.count()
 
     def __init__(self,
                  fitness,
@@ -73,7 +73,7 @@ class Tree(Individual):
         self.n_functions = len(self.function_set)
         self.init_depth = init_depth
         self.tree = []
-        self.id = next(self.id_iter)
+        #self.id = next(self.id_iter)
         self.partners = []
 
     def size(self):
