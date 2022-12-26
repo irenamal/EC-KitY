@@ -1,7 +1,3 @@
-"""
-This module implements the class `Fitness`
-"""
-
 from abc import abstractmethod
 
 

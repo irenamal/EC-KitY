@@ -12,17 +12,19 @@ class AssemblyIndividual(Tree):
                  function_set=None,
                  terminal_set=None,
                  erc_range=None,
+                 fitness1=None,
+                 fitness2=None,
                  fitness=None):
         super().__init__(fitness)
         self.tree1 = Tree(function_set=function_set,
                           terminal_set=terminal_set,
                           erc_range=erc_range,
-                          fitness=fitness,
+                          fitness=fitness1,
                           init_depth=init_depth)
         self.tree2 = Tree(function_set=function_set,
                           terminal_set=terminal_set,
                           erc_range=erc_range,
-                          fitness=fitness,
+                          fitness=fitness2,
                           init_depth=init_depth)
         self.id = next(self.id_iter)
 
@@ -43,8 +45,12 @@ class AssemblyIndividual(Tree):
         self.tree2.execute(*args, **kwargs)
 
     def execute(self, *args, **kwargs):
+        print("@start:\n")
         self.tree1.execute(*args, **kwargs)
+        print("@end:\n")
+        print("@start:\n")
         self.tree2.execute(*args, **kwargs)
+        print("@end:\n")
 
     def random_subtree1(self):
         return self.tree1.random_subtree()
@@ -63,4 +69,15 @@ class AssemblyIndividual(Tree):
         self.tree1.show()
         print("\ntree 2:\n")
         self.tree2.show()
+
+    def set_evaluation(self, prev_fitness1, prev_fitness2, prev_fitness):
+        self.tree1.fitness.set_fitness(prev_fitness1)
+        self.tree2.fitness.set_fitness(prev_fitness2)
+        self.fitness.set_fitness(prev_fitness)
+
+    def unset_evaluation(self):
+        self.tree1.fitness.set_not_evaluated()
+        self.tree2.fitness.set_not_evaluated()
+        self.fitness.set_not_evaluated()
+
 

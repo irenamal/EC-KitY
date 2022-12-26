@@ -32,6 +32,10 @@ class TournamentSelection(SelectionMethod):
         for participant in tournament[1:]:
             if participant.better_than(winner):
                 winner = participant
-        result = winner.clone()
-        result.selected_by.append(type(self).__name__)
-        return result
+        # save the previously calculated fitness before clone
+        prev_fitness1 = winner.tree1.get_pure_fitness()
+        prev_fitness2 = winner.tree2.get_pure_fitness()
+        prev_fitness = winner.get_pure_fitness()
+        new_winner = winner.clone()
+        new_winner.set_evaluation(prev_fitness1, prev_fitness2, prev_fitness)
+        return new_winner

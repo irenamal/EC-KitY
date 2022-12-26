@@ -6,7 +6,7 @@ from eckity.algorithms.simple_evolution import SimpleEvolution
 from eckity.breeders.simple_breeder import SimpleBreeder
 from eckity.creators.gp_creators.grow_typed import GrowCreator
 from eckity.genetic_operators.crossovers.subtree_crossover import SubtreeCrossover
-from eckity.genetic_operators.mutations.subtree_mutation import SubtreeMutation
+from eckity.genetic_operators.mutations.assembly_replacing_mutation import AssemblyReplacingMutation
 from eckity.genetic_operators.mutations.erc_mutation import ERCMutation
 from eckity.genetic_operators.selections.tournament_selection import TournamentSelection
 from eckity.statistics.best_average_worst_statistics import BestAverageWorstStatistics
@@ -96,7 +96,7 @@ def main():
                                            terminal_set=terminal_set,
                                            function_set=function_set,
                                            bloat_weight=0.00001),
-                      population_size=50,
+                      population_size=10,
                       # user-defined fitness evaluation method
                       evaluator=AssemblyEvaluator(),
                       # this is a maximization problem (fitness is accuracy), so higher fitness is better
@@ -104,8 +104,8 @@ def main():
                       elitism_rate=0.05,
                       # genetic operators sequence to be applied in each generation
                       operators_sequence=[
+                          AssemblyReplacingMutation(probability=0.4, arity=2), # first because it depends on the fitness
                           SubtreeCrossover(probability=0.8, arity=2),
-                          #SubtreeMutation(probability=0.4, arity=1),
                           #ERCMutation(probability=0.05, arity=1)
                       ],
                       selection_methods=[

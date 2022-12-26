@@ -40,6 +40,10 @@ class GPTreeCreator(Creator):
         individuals = [AssemblyIndividual(function_set=self.function_set,
                                           terminal_set=self.terminal_set,
                                           erc_range=self.erc_range,
+                                          fitness1=GPFitness(bloat_weight=self.bloat_weight,
+                                                             higher_is_better=higher_is_better),
+                                          fitness2=GPFitness(bloat_weight=self.bloat_weight,
+                                                             higher_is_better=higher_is_better),
                                           fitness=GPFitness(bloat_weight=self.bloat_weight,
                                                             higher_is_better=higher_is_better),
                                           init_depth=self.init_depth)

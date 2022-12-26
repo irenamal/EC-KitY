@@ -64,19 +64,28 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                 f.seek(0, os.SEEK_END)
         f.close()
 
+        score1 = 0
+        score2 = 0
+
         proc = subprocess.Popen([self.nasm_path, "-f bin", file_path1, "-o", self.survivors_path + individual_name1],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
         if "error" in str(stderr):
             print(stderr)
-            return -1  # fitness = -1
+            score1 = -1  # fitness = -1
         proc = subprocess.Popen([self.nasm_path, "-f bin", file_path2, "-o", self.survivors_path + individual_name2],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
         if "error" in str(stderr):
             print(stderr)
-            os.remove(self.survivors_path + individual_name1)
-            return -1  # fitness = -1
+            score2 = -1  # fitness = -1
+
+        if score1 == -1 or score2 == -1:  # one of the trees in invalid
+            if os.path.exists(self.survivors_path + individual_name1):
+                os.remove(self.survivors_path + individual_name1)
+            if os.path.exists(self.survivors_path + individual_name2):
+                os.remove(self.survivors_path + individual_name2)
+            return [score1, score2, min(score1, score2)]
 
         os.system("cd corewars8086 & cgx.bat")
         os.remove(self.survivors_path + individual_name1)
@@ -84,19 +93,39 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
 
         # open scores.csv and get the survivors score in comparison to others
         score = 0
-        all_scores = []
+        all_individual_scores = []
+        all_group_scores = []
+        # compute fitness for each of the trees
         with open("corewars8086\\scores.csv") as scores:
+            flag_ind = False
             scores = scores.readlines()
             for line in scores:
                 if line == "Groups:\n":
                     continue
-                if line == "\n":
-                    break
-                line = line.split(',')
-                if line[0] == individual_name1[:-1]:
-                    score = float(line[1][:-1])
-                all_scores.append(float(line[1][:-1]))
-        all_scores.sort()
-        fitness = all_scores.index(score) + (score/sum(all_scores))
-        print("{} score: {}".format(individual_name1[:-1], fitness))
-        return fitness  # how many did the survivor beat * its partial score?
+                if not flag_ind and line != "Warriors:\n" and line != "\n":
+                    line = line.split(',')
+                    if line[0] == individual_name1[:-1]:
+                        score = float(line[1][:-1])
+                    all_group_scores.append(float(line[1][:-1]))
+                    continue
+                if line == "Warriors:\n":
+                    flag_ind = True
+                    continue
+                if flag_ind:
+                    line = line.split(',')
+                    if line[0] == individual_name1:
+                        score1 = float(line[1][:-1])
+                    if line[0] == individual_name2:
+                        score2 = float(line[1][:-1])
+                    all_individual_scores.append(float(line[1][:-1]))
+
+        all_individual_scores.sort()
+        all_group_scores.sort()
+        fitness1 = all_individual_scores.index(score1) + (score1 / sum(all_individual_scores))
+        fitness2 = all_individual_scores.index(score2) + (score2 / sum(all_individual_scores))
+        fitness = all_group_scores.index(score) + (score / sum(all_group_scores))
+        print("{} score: {}".format(individual_name1, fitness1))
+        print("{} score: {}".format(individual_name2, fitness2))
+        print("Total {} score: {}".format(individual_name2[:-1], fitness))
+
+        return [fitness1, fitness2, fitness]  # how many did the survivor beat * its partial score?
