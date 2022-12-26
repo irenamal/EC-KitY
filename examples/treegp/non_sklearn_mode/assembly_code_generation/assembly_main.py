@@ -1,6 +1,9 @@
 import random
+import shutil
 from time import time
 import sys
+import os
+import subprocess
 
 from eckity.algorithms.simple_evolution import SimpleEvolution
 from eckity.breeders.simple_breeder import SimpleBreeder
@@ -13,15 +16,27 @@ from eckity.statistics.best_average_worst_statistics import BestAverageWorstStat
 from eckity.subpopulation import Subpopulation
 from eckity.termination_checkers.threshold_from_target_termination_checker import ThresholdFromTargetTerminationChecker
 from examples.treegp.non_sklearn_mode.assembly_code_generation.assembly_evaluator import AssemblyEvaluator
-
 from examples.treegp.non_sklearn_mode.assembly_code_generation.assembly_parameters import *
+
 TYPED = True
 
 
+def clear_folder(path):
+    folder = os.listdir(path)
+    for f in folder:
+        os.remove(os.path.join(path, f))
+
+
+def copy_survivors(src_path, dst_path, survivors_set):
+    for survivor in survivors_set:
+        if os.path.exists(os.path.join(src_path, survivor+"1")):
+            shutil.copy(os.path.join(src_path, survivor+"1"), os.path.join(dst_path, survivor+"1"))
+        if os.path.exists(os.path.join(src_path, survivor+"2")):
+            shutil.copy(os.path.join(src_path, survivor+"2"), os.path.join(dst_path, survivor+"2"))
+
+
 def main():
-
     start_time = time()
-
     if TYPED:
         terminal_set = [(reg, "reg") for reg in general_registers] + \
                        [(reg, "address") for reg in addressing_registers] + \
@@ -90,6 +105,19 @@ def main():
 
         random.shuffle(function_set)
 
+    # Create train and test set
+    competition_survivors_path = "corewars8086\\competition_survivors"
+    run_survivors_path = "corewars8086\\survivors\\"
+
+    all_survivors = os.listdir(competition_survivors_path)
+    group_survivors = list(set([survivor[:-1] for survivor in all_survivors]))  # avoid the warrior enumeration
+
+    train_set = random.sample(group_survivors, k=int(0.7*len(group_survivors)))  # train set
+    test_set = [test for test in group_survivors if test not in train_set]  # test set
+
+    clear_folder(run_survivors_path)
+    copy_survivors(competition_survivors_path, run_survivors_path, train_set)
+
     # Initialize SimpleEvolution instance
     algo = SimpleEvolution(
         Subpopulation(creators=GrowCreator(init_depth=(1, 20),
@@ -104,7 +132,7 @@ def main():
                       elitism_rate=0.05,
                       # genetic operators sequence to be applied in each generation
                       operators_sequence=[
-                          AssemblyReplacingMutation(probability=0.4, arity=2), # first because it depends on the fitness
+                          AssemblyReplacingMutation(probability=0.5, arity=2),  # first because it depends on the fitness
                           SubtreeCrossover(probability=0.8, arity=2),
                           #ERCMutation(probability=0.05, arity=1)
                       ],
@@ -125,11 +153,17 @@ def main():
     algo.evolve()
 
     # execute the best individual after the evolution process ends
-    original_stdout = sys.stdout
-    with open('winners\\'+str(time())+'.asm', 'w+') as sys.stdout:
-        algo.execute()  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
-                       # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
-    sys.stdout = original_stdout
+    clear_folder(run_survivors_path)
+    copy_survivors(competition_survivors_path, run_survivors_path, test_set)
+    trained_survivor = algo.execute()
+    print("The winner's test run:")
+    algo.population.sub_populations[0].evaluator._evaluate_individual(trained_survivor)
+
+    # original_stdout = sys.stdout
+    #     with open('winners\\'+str(time())+'.asm', 'w+') as sys.stdout:
+    #         algo.execute()  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
+    #                        # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
+    #     sys.stdout = original_stdout
 
     print('total time:', time() - start_time)
 

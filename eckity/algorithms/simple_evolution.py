@@ -169,7 +169,7 @@ class SimpleEvolution(Algorithm):
 
         """
         print("The winner:")
-        return self.best_of_run_.execute(**kwargs)
+        return self.best_of_run_  # .execute(**kwargs)
 
     def finish(self):
         """

@@ -77,6 +77,8 @@ class SubtreeCrossover(GeneticOperator):
         # 1. between the two first trees
         # 2. between the two second trees
         # 3. replace one first tree with the other one
+        if len(individuals) < 2:
+            return individuals
         option = random.random()
         if 0 <= option < 0.33:
             return self.crossover_type1(individuals)
