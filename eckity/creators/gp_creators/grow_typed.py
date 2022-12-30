@@ -38,7 +38,7 @@ class GrowCreator(GPTreeCreator):
         """
         super().__init__(init_depth=init_depth, function_set=function_set, terminal_set=terminal_set,
                          erc_range=erc_range, bloat_weight=bloat_weight, events=events)
-        self.range_size = 2 * (len(terminal_set) + len(function_set))
+        self.range_size = 10 * (len(terminal_set) + len(function_set))
 
     @overrides
     def create_tree(self, tree_ind, max_depth=5):
@@ -95,9 +95,15 @@ class GrowCreator(GPTreeCreator):
                 node = tree_ind.random_terminal()
             else:  # intermediate depth, grow
                 if random() > 0.5:
-                    node = tree_ind.random_function()
+                    if random() > 0.05:
+                        node = tree_ind.random_function()
+                    else:
+                        node = tree_ind.default_function()
                 else:
-                    node = tree_ind.random_terminal()
+                    if random() > 0.1:
+                        node = tree_ind.random_terminal()
+                    else:
+                        node = tree_ind.default_terminal()
 
         # add the new node to the tree of the given individual
             if tree_ind.add_tree(node):

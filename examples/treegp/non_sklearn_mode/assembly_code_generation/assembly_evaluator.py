@@ -40,10 +40,13 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
 
     def _read_scores(self, individual_name1, individual_name2):
         all_individual_scores = []
+        all_alive_time = []
         all_group_scores = []
         score1 = 0
         score2 = 0
         score = 0
+        alive_time1 = 0
+        alive_time2 = 0
         with open("corewars8086\\scores.csv") as scores:
             flag_ind = False
             scores = scores.readlines()
@@ -62,14 +65,19 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                 if flag_ind:
                     line = line.split(',')
                     if line[0] == individual_name1:
-                        score1 = float(line[1][:-1])
+                        score1 = float(line[1])
+                        alive_time1 = float(line[2][:-1])
                     if line[0] == individual_name2:
-                        score2 = float(line[1][:-1])
-                    all_individual_scores.append(float(line[1][:-1]))
+                        score2 = float(line[1])
+                        alive_time2 = float(line[2][:-1])
+                    all_individual_scores.append(float(line[1]))
+                    all_alive_time.append(float(line[2][:-1]))
         all_individual_scores.sort()
         all_group_scores.sort()
+        all_alive_time.sort()
         return {"warrior1": score1, "warrior2": score2, "survivor": score,
-                "all_warriors": all_individual_scores, "all_survivors": all_group_scores}
+                "all_warriors": all_individual_scores, "all_survivors": all_group_scores,
+                "alive1": alive_time1, "alive2": alive_time2, "all_alive": all_alive_time}
 
     def _evaluate_individual(self, individual):
         """
@@ -114,14 +122,25 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         # open scores.csv and get the survivors score in comparison to others
         results = self._read_scores(individual_name1, individual_name2)
 
-        fitness1 = results["all_warriors"].index(results["warrior1"]) + \
-                   (results["warrior1"] / sum(results["all_warriors"]))
-        fitness2 = results["all_warriors"].index(results["warrior2"]) + \
-                   (results["warrior2"] / sum(results["all_warriors"]))
-        fitness = results["all_survivors"].index(results["survivor"]) + \
-                  (results["survivor"] / sum(results["all_survivors"]))
+        normalized_score1 = normalize_from_list(results["all_warriors"], results["warrior1"])
+        normalized_score2 = normalize_from_list(results["all_warriors"], results["warrior2"])
+        normalized_score = normalize_from_list(results["all_survivors"], results["survivor"])
+        normalized_alive_time1 = normalize_from_list(results["all_alive"], results["alive1"])
+        normalized_alive_time2 = normalize_from_list(results["all_alive"], results["alive2"])
+        normalized_alive_time = max(normalized_alive_time1, normalized_alive_time2)
+        fitness1 = fitness_calculation(normalized_score1, normalized_alive_time1)
+        fitness2 = fitness_calculation(normalized_score2, normalized_alive_time2)
+        fitness = fitness_calculation(normalized_score, normalized_alive_time)
         print("{} score: {}".format(individual_name1, fitness1))
         print("{} score: {}".format(individual_name2, fitness2))
         print("Total {} score: {}".format(individual_name2[:-1], fitness))
 
         return [fitness1, fitness2, fitness]  # how many did the survivor beat * its partial score?
+
+
+def normalize_from_list(list: list, element):
+    return list.index(element) + element/sum(list)
+
+
+def fitness_calculation(score, alive_time):
+    return round(0.7 * score + 0.3 * alive_time, 5)

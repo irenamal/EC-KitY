@@ -160,6 +160,14 @@ class Tree(Individual):
 
         return TerminalNode(value=node[0], type=node[1])
 
+    def default_terminal(self):
+        return TerminalNode(value="", type="section")
+
+    def default_function(self):
+        """select a random function"""
+        return FunctionNode(function=lambda: None, num_of_parameters=0,
+                            parameters=[], type="section")
+
     def _execute(self, pos, **kwargs):
         """Recursively execute the tree by traversing it in a depth-first order
            (pos is a size-1 list so as to pass "by reference" on successive recursive calls)."""

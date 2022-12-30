@@ -50,7 +50,8 @@ class SimpleFitness(Fitness):
             fitness score of the individual
         """
         if not self._is_evaluated:
-            raise ValueError('Fitness not evaluated yet')
+            #raise ValueError('Fitness not evaluated yet')
+            return -2
         return self.fitness
 
     @overrides

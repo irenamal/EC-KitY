@@ -1,3 +1,4 @@
+import random
 from random import randint
 
 from eckity.creators.gp_creators.grow_typed import GrowCreator
@@ -27,10 +28,16 @@ class SubtreeMutation(GeneticOperator):
                                        erc_range=ind.erc_range)
 
             # TODO refactor dummy individual creation, only the tree should be generated
-            for i in range(ind.size()):  # mutation can fail due to type mismatch
-                subtree_individual = tree_creator.create_individuals(1, None)[0]
-                if ind.replace_subtree(subtree_individual.tree):
-                    break
+            if random.random() > 0.5:  # mutate tree1
+                for i in range(ind.size()):  # mutation can fail due to type mismatch
+                    subtree_individual = tree_creator.create_individuals(1, None)[0]
+                    if ind.replace_subtree(subtree_individual.tree.tree1):
+                        break
+            else:  # mutate tree2
+                for i in range(ind.size()):  # mutation can fail due to type mismatch
+                    subtree_individual = tree_creator.create_individuals(1, None)[0]
+                    if ind.replace_subtree(subtree_individual.tree.tree2):
+                        break
 
         self.applied_individuals = individuals
         return individuals
