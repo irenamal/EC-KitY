@@ -51,6 +51,7 @@ def main():
                        [(opcode, "op_rep") for opcode in opcodes_repeats] + \
                        [(opcode, "op_special") for opcode in opcodes_special] + \
                        [(opcode, "op_function") for opcode in opcodes_function] + \
+                       [(opcode, "op_pointer") for opcode in opcodes_pointers] + \
                        [("", "section")]
 
         random.shuffle(terminal_set)
@@ -72,8 +73,10 @@ def main():
                          ["reg", "section"], "section") for opcode in ["sal", "sar"]] + \
                        [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
                          ["op_double", "reg", "address", "section"], "section")] + \
-                       [(lambda dst, src, *args: print("{} {},{}".format("lea", dst, src)),
-                         ["reg", "address", "section"], "section")] + \
+                       [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
+                         ["op_pointer", "reg", "address", "section"], "section")] + \
+                       [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
+                         ["op_pointer", "reg", "address_reg", "section"], "section")] + \
                        [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
                          ["op_double", "address", "reg", "section"], "section")] + \
                        [(lambda opcode, dst, src, *args: print("{} {} {},{}".format(opcode, "WORD", dst, src)),
@@ -88,6 +91,8 @@ def main():
                          ["op_single", "address", "section"], "section")] + \
                        [(lambda opcode, op, *args: print("{} {}".format(opcode, op)),
                          ["op_function", "address", "section"], "section")] + \
+                       [(lambda opcode, op, *args: print("{} {}".format(opcode, op)),
+                         ["op_function", "address_reg", "section"], "section")] + \
                        [(lambda opcode, *args: print("{}".format(opcode)), ["op", "section"], "section")] + \
                        [(lambda opcode, *args: print("{}".format(opcode)), ["op_special", "section"], "section")] + \
                        [(lambda rep, opcode, *args: print("{} {}".format(rep, opcode)),
