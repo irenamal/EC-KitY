@@ -20,7 +20,7 @@ from examples.treegp.non_sklearn_mode.assembly_code_generation.assembly_evaluato
 from examples.treegp.non_sklearn_mode.assembly_code_generation.assembly_parameters import *
 
 TYPED = True
-
+WINDOWS = False
 
 def clear_folder(path):
     folder = os.listdir(path)
@@ -110,8 +110,8 @@ def main():
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["address", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["address_reg", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["reg", "section"], "section")] + \
-                       [(lambda const, *args: print("dw 0x{}".format(const)), ["const", "section"], "section")] + \
-                       [(lambda op, const, *args: "{} + 0x{}]".format(op[:-1], const), ["address_reg", "const"],
+                       [(lambda const, *args: print("dw {}".format(const)), ["const", "section"], "section")] + \
+                       [(lambda op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "const"],
                          "address")]
                        #[(lambda op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "reg"],
                         # "address")]
@@ -119,8 +119,17 @@ def main():
         random.shuffle(function_set)
 
     # Create train and test set
-    competition_survivors_path = "corewars8086\\competition_survivors"
-    run_survivors_path = "corewars8086\\survivors\\"
+    if WINDOWS:
+        competition_survivors_path = "corewars8086\\competition_survivors"
+        run_survivors_path = "corewars8086\\survivors\\"
+        nasm_path = "C:\\Users\\user\\AppData\\Local\\bin\\NASM\\nasm"
+        root_path = ".\\"
+    else:
+        competition_survivors_path = "/cs_storage/irinamal/thesis/corewars8086/competition_survivors"
+        run_survivors_path = "/cs_storage/irinamal/thesis/corewars8086/survivors"
+        root_path = "/cs_storage/irinamal/thesis/"
+        nasm_path = "/cs_storage/irinamal/thesis/nasm-2.15.05/nasm"
+
     competition_size = 10
 
     all_survivors = os.listdir(competition_survivors_path)
@@ -140,7 +149,7 @@ def main():
                                            bloat_weight=0.00001),
                       population_size=20,
                       # user-defined fitness evaluation method
-                      evaluator=AssemblyEvaluator(),
+                      evaluator=AssemblyEvaluator(root_path=root_path, nasm_path=nasm_path),
                       # this is a maximization problem (fitness is accuracy), so higher fitness is better
                       higher_is_better=True,
                       elitism_rate=0.0,

@@ -31,12 +31,12 @@ class SubtreeMutation(GeneticOperator):
             if random.random() > 0.5:  # mutate tree1
                 for i in range(ind.size()):  # mutation can fail due to type mismatch
                     subtree_individual = tree_creator.create_individuals(1, None)[0]
-                    if ind.replace_subtree(subtree_individual.tree.tree1):
+                    if ind.tree1.replace_subtree(subtree_individual.tree1.tree):
                         break
             else:  # mutate tree2
                 for i in range(ind.size()):  # mutation can fail due to type mismatch
                     subtree_individual = tree_creator.create_individuals(1, None)[0]
-                    if ind.replace_subtree(subtree_individual.tree.tree2):
+                    if ind.tree2.replace_subtree(subtree_individual.tree2.tree):
                         break
 
         self.applied_individuals = individuals
