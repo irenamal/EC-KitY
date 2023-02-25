@@ -12,8 +12,8 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         self.nasm_path = nasm_path
         self.root_path = root_path
         self.survivors_path = os.path.join(root_path, "corewars8086", "survivors")
-        for f in os.listdir("survivors"):
-            os.remove(os.path.join("survivors", f))
+        for f in os.listdir(os.path.join(root_path, "survivors")):
+            os.remove(os.path.join(root_path, "survivors", f))
 
     def _write_survivor_to_file(self, tree, file_path):
         original_stdout = sys.stdout
@@ -123,9 +123,9 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         # open scores.csv and get the survivors score in comparison to others
         results = self._read_scores(individual_name1, individual_name2)
 
-        normalized_score1 = normalize_from_list(results["all_warriors"], results["warrior1"])
-        normalized_score2 = normalize_from_list(results["all_warriors"], results["warrior2"])
-        normalized_score = normalize_from_list(results["all_survivors"], results["survivor"])
+        normalized_score1 = normalize_fitness_from_list(results["all_warriors"], results["warrior1"])
+        normalized_score2 = normalize_fitness_from_list(results["all_warriors"], results["warrior2"])
+        normalized_score = normalize_fitness_from_list(results["all_survivors"], results["survivor"])
         normalized_alive_time1 = normalize_from_list(results["all_alive"], results["alive1"])
         normalized_alive_time2 = normalize_from_list(results["all_alive"], results["alive2"])
         normalized_alive_time = max(normalized_alive_time1, normalized_alive_time2)
@@ -142,6 +142,8 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
 def normalize_from_list(list: list, element):
     return list.index(element) + element/sum(list)
 
+def normalize_fitness_from_list(list: list, element):
+    return list.index(element) *  10 + element/sum(list)
 
 def fitness_calculation(score, alive_time):
     return round(0.7 * score + 0.3 * alive_time, 5)

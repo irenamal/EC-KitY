@@ -91,7 +91,8 @@ class SimpleEvolution(Algorithm):
 				 best_of_run_=None,
 				 best_of_gen=None,
 				 worst_of_gen=None,
-				 generation_num=0):
+				 generation_num=0,
+                 root_path="."):
 
 		if event_names is None:
 			_event_names = ['before_eval', 'after_eval', 'before_breeding', 'after_breeding']
@@ -104,7 +105,7 @@ class SimpleEvolution(Algorithm):
 		super().__init__(population, statistics=statistics, breeder=breeder, population_evaluator=population_evaluator,
 						 events=events, event_names=_event_names, executor=executor, max_workers=max_workers,
 						 random_generator=random_generator, random_seed=random_seed, generation_seed=generation_seed,
-						 termination_checker=termination_checker, generation_num=generation_num)
+						 termination_checker=termination_checker, generation_num=generation_num, root_path = root_path)
 
 		self.termination_checker = termination_checker
 		self.best_of_run_ = best_of_run_

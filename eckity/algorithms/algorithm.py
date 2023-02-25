@@ -8,6 +8,10 @@ import random
 from concurrent.futures.thread import ThreadPoolExecutor
 from concurrent.futures.process import ProcessPoolExecutor
 from time import time
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+import os
 
 from overrides import overrides
 
@@ -46,8 +50,6 @@ class Algorithm(Operator):
 		Maximal number of generations to run the evolutionary process.
 		Note the evolution could end before reaching max_generation,
 		depends on the termination checker.
-		Note that there are max_generation + 1 (at max) fitness calculations,
-		but only max_generation (at max) of selection
 
 	events: dict(str, dict(object, function)), default=None
 		Dictionary of events, where each event holds a dictionary of (subscriber, callback method).
@@ -55,7 +57,7 @@ class Algorithm(Operator):
 	event_names: list of strings, default=None
 		Names of events to publish during the evolution.
 
-    termination_checker: TerminationChecker or a list of TerminationCheckers, default=ThresholdFromTargetTerminationChecker()
+    termination_checker: TerminationChecker, default=ThresholdFromTargetTerminationChecker()
         Responsible for checking if the algorithm should finish before reaching max_generation.
 
 	max_workers: int, default=None
@@ -94,7 +96,8 @@ class Algorithm(Operator):
 				 generation_seed=None,
 				 executor='thread',
 				 max_workers=None,
-				 generation_num=0):
+				 generation_num=0,
+                 root_path="."):
 
 		ext_event_names = event_names.copy() if event_names is not None else []
 
@@ -165,9 +168,10 @@ class Algorithm(Operator):
 		else:
 			raise ValueError('Executor must be either "thread" or "process"')
 		self._executor_type = executor
-		
+
 
 		self.final_generation_ = 0
+        self.root_path = root_path
 
 	@overrides
 	def apply_operator(self, payload):
@@ -183,9 +187,9 @@ class Algorithm(Operator):
 		"""
 		self.initialize()
 
-		if self.should_terminate(self.population,
-                                 self.best_of_run_,
-                                 self.generation_num):
+		if self.termination_checker.should_terminate(self.population,
+													 self.best_of_run_,
+													 self.generation_num):
 			self.final_generation_ = 0
 			self.publish('after_generation')
 		else:
@@ -236,11 +240,12 @@ class Algorithm(Operator):
 		"""
 		Performs the evolutionary main loop
 		"""
-		# there was already "preprocessing" generation created - gen #0
-		# now create another self.max_generation generations (at maximum), starting for gen #1
-		for gen in range(1, self.max_generation + 1):
-			self.generation_num = gen
-			self.update_gen(self.population, gen)
+		fitness_values = []
+        generations = range(0, self.max_generation)
+        run_path = os.path.join(self.root_path, "survivors_" + str(time()))
+        os.mkdir(run_path)
+        for gen in range(self.max_generation):
+            self.generation_num = gen
 
 			self.set_generation_seed(self.next_seed())
 			self.generation_iteration(gen)
@@ -249,6 +254,30 @@ class Algorithm(Operator):
 				self.publish('after_generation')
 				break
 			self.publish('after_generation')
+            fitness_values.append(self.best_of_run_.get_pure_fitness())
+            if not os.path.exists(os.path.join(run_path, "gen_" + str(gen))):
+                os.mkdir(os.path.join(run_path, "gen_" + str(gen)))
+            for sub_population in self.population.sub_populations:
+                for ind in sub_population.individuals:
+                    ind_path = os.path.join(run_path, "gen_" + str(gen), "s" + str(ind.id)+ "_f" + str(ind.fitness.fitness))
+                    if not os.path.exists(ind_path):
+                        os.mkdir(ind_path)
+                    original_stdout = sys.stdout
+                    with open(os.path.join(ind_path, "t1_f" + str(ind.tree1.fitness.fitness) + '.asm'), 'w+') as sys.stdout:
+                        ind.execute1()
+                    with open(os.path.join(ind_path, "t2_f" + str(ind.tree2.fitness.fitness) + '.asm'), 'w+') as sys.stdout:
+                        ind.execute2()
+                    sys.stdout = original_stdout
+
+        # plotting the points
+        plt.plot(generations, fitness_values, color='green', marker='o')
+        m, b = np.polyfit(generations, fitness_values, 1)
+        plt.plot(generations, m * generations + b , color="blue")
+        plt.xlabel('generation number')
+        plt.ylabel('best fitness')
+        plt.title('fitness evolution')
+        plt.savefig(os.path.join(run_path, "fitness_to_gen.png"))
+        plt.show()
 
 		self.executor.shutdown()
 

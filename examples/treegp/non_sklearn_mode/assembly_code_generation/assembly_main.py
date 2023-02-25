@@ -23,10 +23,18 @@ TYPED = True
 WINDOWS = False
 
 def clear_folder(path):
+    """save the survivors into directory of this run for keeping history"""
     folder = os.listdir(path)
     for f in folder:
         os.remove(os.path.join(path, f))
 
+def move_survivors(path):
+    """save the survivors into directory of this run for keeping history"""
+    folder = os.listdir(path)
+    time_stamp = str(time())
+    os.mkdir(os.path.join(".", "survivors_" + time_stamp))
+    for f in folder:
+        os.replace(os.path.join(path, f), os.path.join(".", "survivors_" + time_stamp, f))
 
 def copy_survivors(src_path, dst_path, survivors_set):
     for survivor in survivors_set:
@@ -147,7 +155,7 @@ def main():
                                            terminal_set=terminal_set,
                                            function_set=function_set,
                                            bloat_weight=0.00001),
-                      population_size=20,
+                      population_size=50,
                       # user-defined fitness evaluation method
                       evaluator=AssemblyEvaluator(root_path=root_path, nasm_path=nasm_path),
                       # this is a maximization problem (fitness is accuracy), so higher fitness is better
@@ -169,7 +177,8 @@ def main():
         max_generation=20,
         termination_checker=ThresholdFromTargetTerminationChecker(optimal=5, threshold=0.01),
         statistics=BestAverageWorstStatistics(),
-        random_seed=10
+        random_seed=10,
+        root_path=root_path
     )
 
     # evolve the generated initial population
@@ -179,13 +188,14 @@ def main():
     clear_folder(run_survivors_path)
     copy_survivors(competition_survivors_path, run_survivors_path, test_set)
     original_stdout = sys.stdout
-    with open('winners\\'+str(time())+'.asm', 'w+') as sys.stdout:
+    with open(os.path.join(root_path, "winners", str(time())+'.asm'), 'w+') as sys.stdout:
         trained_survivor = algo.execute()  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
                         # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
     sys.stdout = original_stdout
     print("The winner's test run:")
     algo.population.sub_populations[0].evaluator._evaluate_individual(trained_survivor)
     print('total time:', time() - start_time)
+    clear_folder(os.path.join(root_path, "survivors"))
 
 
 if __name__ == '__main__':
