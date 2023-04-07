@@ -60,6 +60,7 @@ def main():
                        [(opcode, "op_special") for opcode in opcodes_special] + \
                        [(opcode, "op_function") for opcode in opcodes_function] + \
                        [(opcode, "op_pointer") for opcode in opcodes_pointers] + \
+                       [(opcode, "op_ret") for opcode in opcode_ret] + \
                        [("", "section")]
 
         random.shuffle(terminal_set)
@@ -68,6 +69,7 @@ def main():
         function_set = [(section, ["label", "section", "backwards_jmp", "section"], "section")] + \
                        [(section, ["label", "section", "backwards_jmp"], "section")] + \
                        [(section, ["section", "forward_jmp", "section", "label", "section"], "section")] + \
+                       [(section, ["label", "section", "call_func", "backwards_jmp", "label", "section", "return"], "section")] + \
                        [(section, ["section", "section"], "section")] + \
                        [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
                          ["op_double", "reg", "reg", "section"], "section")] + \
@@ -101,6 +103,7 @@ def main():
                          ["op_function", "address", "section"], "section")] + \
                        [(lambda opcode, op, *args: print("{} {}".format(opcode, op)),
                          ["op_function", "address_reg", "section"], "section")] + \
+                       [(lambda *args: print("call l{}".format(len(labels))),  ["section"], "call_func")] * 5 + \
                        [(lambda opcode, *args: print("{}".format(opcode)), ["op", "section"], "section")] + \
                        [(lambda opcode, *args: print("{}".format(opcode)), ["op_special", "section"], "section")] + \
                        [(lambda rep, opcode, *args: print("{} {}".format(rep, opcode)),
@@ -115,12 +118,14 @@ def main():
                          "backwards_jmp")] * 5 + \
                        [(put_label, ["section"], "label")] * 10 + \
                        [(put_label, ["section"], "section")] * 3 + \
+                       [(lambda *args: print("ret"), [""], "return")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["address", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["address_reg", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["reg", "section"], "section")] + \
                        [(lambda const, *args: print("dw {}".format(const)), ["const", "section"], "section")] + \
                        [(lambda op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "const"],
-                         "address")]
+                         "address")] + \
+                       [(lambda *args: "push cs\npop es", ["section"], "section")]
                        #[(lambda op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "reg"],
                         # "address")]
 
@@ -130,7 +135,7 @@ def main():
     if WINDOWS:
         competition_survivors_path = "corewars8086\\competition_survivors"
         run_survivors_path = "corewars8086\\survivors\\"
-        nasm_path = "C:\\Users\\user\\AppData\\Local\\bin\\NASM\\nasm"
+        nasm_path = "C:\\Users\\user\\AppData\\Local\\bin\\NASM\\nasm.exe"
         root_path = ".\\"
     else:
         competition_survivors_path = "/cs_storage/irinamal/thesis/corewars8086/competition_survivors"
@@ -144,7 +149,7 @@ def main():
     group_survivors = list(set([survivor[:-1] for survivor in all_survivors]))  # avoid the warrior enumeration
 
     train_set = random.sample(group_survivors, k=int(0.7 * competition_size))  # train set
-    test_set = [test for test in group_survivors if test not in train_set]  # test set
+    test_set = random.sample([test for test in group_survivors if test not in train_set], k=int(0.5 * competition_size))  # test set
 
     clear_folder(run_survivors_path)
     copy_survivors(competition_survivors_path, run_survivors_path, train_set)

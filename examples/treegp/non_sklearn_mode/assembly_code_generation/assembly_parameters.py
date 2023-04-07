@@ -8,6 +8,7 @@ opcodes_double = ["cmp", "mov", "add", "sub", "and", "or", "xor"]
 opcodes_single = ["div", "mul", "inc", "dec", "not", "neg", "push", "pop"]
 opcodes_function = ["call", "call near", "call far"]
 opcodes_pointers = ["lea", "les", "lds"]
+opcode_ret = ["ret"]
 # specials: xchg, sal, sar, lea
 # not supported: jecxz, imul, idiv, push const, repnz and repnz with s/l/m
 general_registers = ["ax", "bx", "cx"]  # sp, "dx"
@@ -15,7 +16,7 @@ pop_registers = ["ds", "es", "ss"]
 push_registers = ["cs", "ss", "ds", "es"]
 addressing_registers = ["[bx]", "[si]", "[di]", "[bp]"]
 labels = []
-consts = ["0x"+str(2*i) for i in range(-10, 100)] + ["(@start-@end)"]  # 65535, "0xcccc"
+consts = ["0x"+str(2*i) for i in range(-10, 100)] + ["@start", "@end"]  # 65535, "0xcccc"
 
 
 def put_label(*args):

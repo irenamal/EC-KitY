@@ -39,14 +39,10 @@ class AssemblyIndividual(Tree):
         return max(self.tree1.depth(), self.tree2.depth())
 
     def execute1(self, *args, **kwargs):
-        print("@start:\n")
         self.tree1.execute(*args, **kwargs)
-        print("@end:\n")
 
     def execute2(self, *args, **kwargs):
-        print("@start:\n")
         self.tree2.execute(*args, **kwargs)
-        print("@end:\n")
 
     def execute(self, *args, **kwargs):
         self.execute1(*args, **kwargs)

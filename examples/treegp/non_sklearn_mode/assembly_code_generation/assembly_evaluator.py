@@ -2,18 +2,23 @@ import os
 import random
 import sys
 import subprocess
+import threading
+import numpy as np
 from eckity.evaluators.simple_individual_evaluator import SimpleIndividualEvaluator
-
+import shutil
+from sklearn.preprocessing import StandardScaler, PowerTransformer
 
 class AssemblyEvaluator(SimpleIndividualEvaluator):
-
+# Allow some evaluators run in parallel. Need to modify the paths for the execution.
+# Need to duplicate the original directory for this to work properly
     def __init__(self, root_path, nasm_path):
         super().__init__()
         self.nasm_path = nasm_path
         self.root_path = root_path
-        self.survivors_path = os.path.join(root_path, "corewars8086", "survivors")
-        for f in os.listdir(os.path.join(root_path, "survivors")):
-            os.remove(os.path.join(root_path, "survivors", f))
+        self.engine = "corewars8086-5.1.0-SNAPSHOT-jar-with-dependencies.jar"
+
+       # for f in os.listdir(os.path.join(root_path, "survivors")):
+        #    os.remove(os.path.join(root_path, "survivors", f))
 
     def _write_survivor_to_file(self, tree, file_path):
         original_stdout = sys.stdout
@@ -30,8 +35,8 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                 f.seek(0, os.SEEK_END)
         f.close()
 
-    def _compile_survivor(self, file_path, individual_name):
-        proc = subprocess.Popen([self.nasm_path, "-f bin", file_path, "-o", os.path.join(self.survivors_path, individual_name)],
+    def _compile_survivor(self, file_path, individual_name, survivors_path, nasm_path):
+        proc = subprocess.Popen([nasm_path, "-f bin", file_path, "-o", os.path.join(survivors_path, individual_name)],
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
         if "error" in str(stderr):
@@ -39,7 +44,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
             return -1  # fitness = -1
         return 0
 
-    def _read_scores(self, individual_name1, individual_name2):
+    def _read_scores(self, path, individual_name1, individual_name2):
         all_individual_scores = []
         all_alive_time = []
         all_group_scores = []
@@ -48,7 +53,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         score = 0
         alive_time1 = 0
         alive_time2 = 0
-        with open(os.path.join(self.root_path, "corewars8086", "scores.csv")) as scores:
+        with open(os.path.join(path, "scores.csv")) as scores:
             flag_ind = False
             scores = scores.readlines()
             for line in scores:
@@ -99,6 +104,18 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
             The value ranges from 0 (worst case) to 1 (best case).
         """
 
+        worker = str(threading.get_ident())
+        if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker)):
+            os.mkdir(os.path.join(self.root_path, "corewars8086_" + worker))
+        survivors_path = os.path.join(self.root_path, "corewars8086_" + worker, "survivors")
+        shutil.copytree(os.path.join(self.root_path, "corewars8086", "survivors"), survivors_path, dirs_exist_ok=True)
+        if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker, self.engine)):
+            shutil.copy(os.path.join(self.root_path, "corewars8086", self.engine),
+                        os.path.join(self.root_path, "corewars8086_" + worker, self.engine))
+        nasm_path = os.path.join(self.root_path, "corewars8086_" + worker, "nasm")
+        if not os.path.exists(nasm_path):
+            shutil.copy(self.nasm_path, os.path.join(self.root_path, "corewars8086_" + worker, "nasm"))
+
         individual_name1 = str(individual.id) + "try1"
         individual_name2 = str(individual.id) + "try2"
         file_path1 = os.path.join(self.root_path, 'survivors', individual_name1 + '.asm')
@@ -106,8 +123,8 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         self._write_survivor_to_file(individual.tree1, file_path1)
         self._write_survivor_to_file(individual.tree2, file_path2)
 
-        score1 = self._compile_survivor(file_path1, individual_name1)
-        score2 = self._compile_survivor(file_path2, individual_name2)
+        score1 = self._compile_survivor(file_path1, individual_name1, survivors_path, nasm_path)
+        score2 = self._compile_survivor(file_path2, individual_name2, survivors_path, nasm_path)
 
         if score1 == -1 or score2 == -1:  # one of the trees in invalid
             if os.path.exists(os.path.join(self.survivors_path, individual_name1)):
@@ -116,12 +133,13 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                 os.remove(os.path.join(self.survivors_path, individual_name2))
             return [score1, score2, min(score1, score2)]
 
-        os.system("cd {} && java -cp corewars8086-4.0.0-SNAPSHOT-jar-with-dependencies.jar il.co.codeguru.corewars8086.CoreWarsEngine".format(os.path.join(self.root_path, "corewars8086"))) # & cgx.bat
-        os.remove(os.path.join(self.survivors_path, individual_name1))
-        os.remove(os.path.join(self.survivors_path, individual_name2))
+        os.system("cd {} && java -cp {} il.co.codeguru.corewars8086.CoreWarsEngine".format(os.path.join(self.root_path, "corewars8086_" + worker), self.engine)) # & cgx.bat
+        os.remove(os.path.join(survivors_path, individual_name1))
+        os.remove(os.path.join(survivors_path, individual_name2))
 
         # open scores.csv and get the survivors score in comparison to others
-        results = self._read_scores(individual_name1, individual_name2)
+        results = self._read_scores(os.path.join(self.root_path, "corewars8086_" + worker),
+                                    individual_name1, individual_name2)
 
         normalized_score1 = normalize_fitness_from_list(results["all_warriors"], results["warrior1"])
         normalized_score2 = normalize_fitness_from_list(results["all_warriors"], results["warrior2"])
