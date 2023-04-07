@@ -41,12 +41,13 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         stdout, stderr = proc.communicate()
         if "error" in str(stderr):
             print(stderr)
-            return -1  # fitness = -1
+            return -10  # fitness = -1
         return 0
 
     def _read_scores(self, path, individual_name1, individual_name2):
         all_individual_scores = []
         all_alive_time = []
+        all_bytes_written = []
         all_group_scores = []
         score1 = 0
         score2 = 0
@@ -72,18 +73,27 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                     line = line.split(',')
                     if line[0] == individual_name1:
                         score1 = float(line[1])
-                        alive_time1 = float(line[2][:-1])
+                        alive_time1 = float(line[2])
+                        bytes1 = float(line[3][:-1])
                     if line[0] == individual_name2:
                         score2 = float(line[1])
-                        alive_time2 = float(line[2][:-1])
+                        alive_time2 = float(line[2])
+                        bytes2 = float(line[3][:-1])
                     all_individual_scores.append(float(line[1]))
-                    all_alive_time.append(float(line[2][:-1]))
-        all_individual_scores.sort()
-        all_group_scores.sort()
-        all_alive_time.sort()
-        return {"warrior1": score1, "warrior2": score2, "survivor": score,
-                "all_warriors": all_individual_scores, "all_survivors": all_group_scores,
-                "alive1": alive_time1, "alive2": alive_time2, "all_alive": all_alive_time}
+                    all_alive_time.append(float(line[2]))
+                    all_bytes_written.append(float(line[3][:-1]))
+        data = [all_individual_scores, all_alive_time, all_bytes_written]
+        data = np.transpose(data)
+
+        return {"data": data,
+                "all_group_scores": np.array(all_group_scores).reshape(-1,1),
+                "score": all_group_scores.index(score),
+                "score1": all_individual_scores.index(score1),
+                "score2": all_individual_scores.index(score2),
+                "alive1": all_alive_time.index(alive_time1),
+                "alive2": all_alive_time.index(alive_time2),
+                "bytes1": all_bytes_written.index(bytes1),
+                "bytes2": all_bytes_written.index(bytes2) }
 
     def _evaluate_individual(self, individual):
         """
@@ -126,12 +136,12 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         score1 = self._compile_survivor(file_path1, individual_name1, survivors_path, nasm_path)
         score2 = self._compile_survivor(file_path2, individual_name2, survivors_path, nasm_path)
 
-        if score1 == -1 or score2 == -1:  # one of the trees in invalid
-            if os.path.exists(os.path.join(self.survivors_path, individual_name1)):
-                os.remove(os.path.join(self.survivors_path, individual_name1))
-            if os.path.exists(os.path.join(self.survivors_path, individual_name2)):
-                os.remove(os.path.join(self.survivors_path, individual_name2))
-            return [score1, score2, min(score1, score2)]
+        if score1 == -10 or score2 == -10:  # one of the trees in invalid
+            if os.path.exists(os.path.join(survivors_path, individual_name1)):
+                os.remove(os.path.join(survivors_path, individual_name1))
+            if os.path.exists(os.path.join(survivors_path, individual_name2)):
+                os.remove(os.path.join(survivors_path, individual_name2))
+            return [score1, score2, min(score1, score2), [-10, -10, -10]]
 
         os.system("cd {} && java -cp {} il.co.codeguru.corewars8086.CoreWarsEngine".format(os.path.join(self.root_path, "corewars8086_" + worker), self.engine)) # & cgx.bat
         os.remove(os.path.join(survivors_path, individual_name1))
@@ -141,27 +151,28 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         results = self._read_scores(os.path.join(self.root_path, "corewars8086_" + worker),
                                     individual_name1, individual_name2)
 
-        normalized_score1 = normalize_fitness_from_list(results["all_warriors"], results["warrior1"])
-        normalized_score2 = normalize_fitness_from_list(results["all_warriors"], results["warrior2"])
-        normalized_score = normalize_fitness_from_list(results["all_survivors"], results["survivor"])
-        normalized_alive_time1 = normalize_from_list(results["all_alive"], results["alive1"])
-        normalized_alive_time2 = normalize_from_list(results["all_alive"], results["alive2"])
-        normalized_alive_time = max(normalized_alive_time1, normalized_alive_time2)
-        fitness1 = fitness_calculation(normalized_score1, normalized_alive_time1)
-        fitness2 = fitness_calculation(normalized_score2, normalized_alive_time2)
-        fitness = fitness_calculation(normalized_score, normalized_alive_time)
+        normalized_data = normalize_data(results["data"])
+     #   normalized_group_scores = normalize_data(results["all_group_scores"])
+
+        fitness1 = fitness_calculation(normalized_data[results["score1"]][0],
+                                       normalized_data[results["alive1"]][1],
+                                       normalized_data[results["bytes1"]][2])
+        fitness2 = fitness_calculation(normalized_data[results["score2"]][0],
+                                       normalized_data[results["alive2"]][1],
+                                       normalized_data[results["bytes2"]][2])
+        #fitness = round(normalized_group_scores[results["score"]][0], 5)
+        survivor_score = normalized_data[results["score1"]][0] + normalized_data[results["score2"]][0]
+        survivor_alive = max(normalized_data[results["alive1"]][1], normalized_data[results["alive2"]][1])
+        survivor_bytes = normalized_data[results["bytes1"]][2] + normalized_data[results["bytes2"]][2]
+        fitness = fitness_calculation(survivor_score, survivor_alive, survivor_bytes)
         print("{} score: {}".format(individual_name1, fitness1))
         print("{} score: {}".format(individual_name2, fitness2))
         print("Total {} score: {}".format(individual_name2[:-1], fitness))
 
-        return [fitness1, fitness2, fitness]  # how many did the survivor beat * its partial score?
+        return [fitness1, fitness2, fitness, [survivor_score, survivor_alive, survivor_bytes]]  # how many did the survivor beat * its partial score?
 
+def normalize_data(data):
+    return StandardScaler().fit_transform(data)
 
-def normalize_from_list(list: list, element):
-    return list.index(element) + element/sum(list)
-
-def normalize_fitness_from_list(list: list, element):
-    return list.index(element) *  10 + element/sum(list)
-
-def fitness_calculation(score, alive_time):
-    return round(0.7 * score + 0.3 * alive_time, 5)
+def fitness_calculation(score, alive_time, bytes_written):
+    return round(0.5 * score + 0.25 * alive_time + 0.25 * bytes_written, 5)

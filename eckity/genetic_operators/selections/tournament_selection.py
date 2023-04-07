@@ -37,5 +37,5 @@ class TournamentSelection(SelectionMethod):
         prev_fitness2 = winner.tree2.get_pure_fitness()
         prev_fitness = winner.get_pure_fitness()
         new_winner = winner.clone()
-        new_winner.set_evaluation(prev_fitness1, prev_fitness2, prev_fitness)
+        new_winner.set_evaluation(prev_fitness1, prev_fitness2, prev_fitness, winner.fitness_parts)
         return new_winner

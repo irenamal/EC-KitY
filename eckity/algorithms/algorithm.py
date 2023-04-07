@@ -241,10 +241,16 @@ class Algorithm(Operator):
 		Performs the evolutionary main loop
 		"""
 		fitness_values = []
+        score_values = []
+        alive_values = []
+        bytes_values = []
         generations = range(0, self.max_generation)
         run_path = os.path.join(self.root_path, "survivors_" + str(time()))
         os.mkdir(run_path)
         for gen in range(self.max_generation):
+            generation_fitness_values = []
+            generation_fitness_parts_values = []
+
             self.generation_num = gen
 
 			self.set_generation_seed(self.next_seed())
@@ -254,7 +260,6 @@ class Algorithm(Operator):
 				self.publish('after_generation')
 				break
 			self.publish('after_generation')
-            fitness_values.append(self.best_of_run_.get_pure_fitness())
             if not os.path.exists(os.path.join(run_path, "gen_" + str(gen))):
                 os.mkdir(os.path.join(run_path, "gen_" + str(gen)))
             for sub_population in self.population.sub_populations:
@@ -268,14 +273,38 @@ class Algorithm(Operator):
                     with open(os.path.join(ind_path, "t2_f" + str(ind.tree2.fitness.fitness) + '.asm'), 'w+') as sys.stdout:
                         ind.execute2()
                     sys.stdout = original_stdout
+                    generation_fitness_values.append(ind.fitness.fitness)
+                    generation_fitness_parts_values.append(ind.fitness_parts)
 
-        # plotting the points
-        plt.plot(generations, fitness_values, color='green', marker='o')
-        m, b = np.polyfit(generations, fitness_values, 1)
-        plt.plot(generations, m * generations + b , color="blue")
-        plt.xlabel('generation number')
-        plt.ylabel('best fitness')
-        plt.title('fitness evolution')
+            fitness_values.append(self.calculate_statistics(generation_fitness_values))
+            generation_fitness_parts_values = np.array(generation_fitness_parts_values)
+            score_values.append(self.calculate_statistics(generation_fitness_parts_values[:,0]))
+            alive_values.append(self.calculate_statistics(generation_fitness_parts_values[:,1]))
+            bytes_values.append(self.calculate_statistics(generation_fitness_parts_values[:,2]))
+
+        fitness_values = np.array(fitness_values)
+        score_values = np.array(score_values)
+        alive_values = np.array(alive_values)
+        bytes_values = np.array(bytes_values)
+
+        plot_fitness = plt.subplot2grid((2, 3), (0, 0), rowspan=1, colspan=3)
+        plot_scores = plt.subplot2grid((2, 3), (1, 0), rowspan=1, colspan=1)
+        plot_alive = plt.subplot2grid((2, 3), (1, 1), rowspan=1, colspan=1)
+        plot_bytes = plt.subplot2grid((2, 3), (1, 2), rowspan=1, colspan=1)
+
+        # fitness graph
+        self.plot_graph(plot_fitness, generations, fitness_values[:, 0], fitness_values[:, 1], fitness_values[:, 2], "Fitness")
+
+        # scores graph
+        self.plot_graph(plot_scores, generations, score_values[:, 0], score_values[:, 1], score_values[:, 2], "Scores")
+
+        # alive time graph
+        self.plot_graph(plot_alive, generations, alive_values[:, 0], alive_values[:, 1], alive_values[:, 2], "Lifetime")
+
+        # written bytes graph
+        self.plot_graph(plot_bytes, generations, bytes_values[:, 0], bytes_values[:, 1], bytes_values[:, 2], "Written bytes")
+
+        plt.tight_layout()
         plt.savefig(os.path.join(run_path, "fitness_to_gen.png"))
         plt.show()
 
@@ -303,12 +332,27 @@ class Algorithm(Operator):
 		"""
 		raise ValueError("generation_iteration is an abstract method in class Algorithm")
 
-	@abstractmethod
-	def finish(self):
-		"""
-		Finish the evolutionary run
-		"""
-		raise ValueError("finish is an abstract method in class Algorithm")
+
+    @staticmethod
+    def calculate_statistics(array):
+        return [np.max(array), np.average(array), np.median(array)]
+
+    @staticmethod
+    def plot_graph(board, x, best, avg, median,  title):
+        board.plot(x, best, color='green', marker='o', label="best")
+        board.plot(x, avg, color='purple', marker='o', label="average")
+        board.plot(x, median, color='blue', marker='o', label="median")
+        board.set_xlabel('Generation number')
+        board.set_ylabel('{} values'.format(title))
+        board.set_title('{}'.format(title))
+        board.legend(loc='upper left', prop={'size':5})
+
+    @abstractmethod
+    def finish(self):
+        """
+        Finish the evolutionary run
+        """
+        raise ValueError("finish is an abstract method in class Algorithm")
 
 	def set_generation_seed(self, seed):
 		"""

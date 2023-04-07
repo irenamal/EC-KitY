@@ -27,6 +27,7 @@ class AssemblyIndividual(Tree):
                           fitness=fitness2,
                           init_depth=init_depth)
         self.id = next(self.id_iter)
+        self.fitness_parts = []
 
     def size(self):
         return max(self.tree1.size(), self.tree2.size())
@@ -66,10 +67,11 @@ class AssemblyIndividual(Tree):
         print("\ntree 2:\n")
         self.tree2.show()
 
-    def set_evaluation(self, prev_fitness1, prev_fitness2, prev_fitness):
+    def set_evaluation(self, prev_fitness1, prev_fitness2, prev_fitness, fitness_parts):
         self.tree1.fitness.set_fitness(prev_fitness1)
         self.tree2.fitness.set_fitness(prev_fitness2)
         self.fitness.set_fitness(prev_fitness)
+        self.fitness_parts = fitness_parts
 
     def unset_evaluation(self):
         self.tree1.fitness.set_not_evaluated()

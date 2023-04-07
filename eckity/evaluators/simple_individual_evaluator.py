@@ -27,15 +27,15 @@ class SimpleIndividualEvaluator(IndividualEvaluator):
 			those individuals will affect the current individual's fitness
 			(not used in simple case)
 
-		Returns
-		-------
-		Individual
-			the individual with the best fitness out of the given individuals
-		"""
-		super().evaluate(individual, environment_individuals)
-		fitness_score = self.evaluate_individual(individual)
-		individual.fitness.set_fitness(fitness_score)
-		return individual
+        Returns
+        -------
+        Individual
+            the individual with the best fitness out of the given individuals
+        """
+        super().evaluate(individual, environment_individuals)
+        fitness_scores = self.evaluate_individual(individual)
+        individual.set_evaluation(fitness_scores[0], fitness_scores[1], fitness_scores[2], fitness_scores[3])
+        return individual
 
 	@abstractmethod
 	def evaluate_individual(self, individual):
