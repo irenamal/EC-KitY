@@ -27,8 +27,9 @@ class SimplePopulationEvaluator(PopulationEvaluator):
 			sub_population = population.sub_populations[0]
 			sp_eval: IndividualEvaluator = sub_population.evaluator
 			eval_results = self.executor.map(sp_eval._evaluate_individual, sub_population.individuals)
-			for ind, fitness_score in zip(sub_population.individuals, eval_results):
-				ind.fitness.set_fitness(fitness_score)
+			for ind, fitness_scores in zip(sub_population.individuals, eval_results):
+				#ind.fitness.set_fitness(fitness_score)
+				ind.set_evaluation(fitness_scores[0], fitness_scores[1], fitness_scores[2], fitness_scores[3])
 
 
 		# only one subpopulation in simple case

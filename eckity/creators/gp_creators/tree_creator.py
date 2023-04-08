@@ -8,33 +8,33 @@ from abc import abstractmethod
 
 
 class GPTreeCreator(Creator):
-	def __init__(self,
-				 init_depth=None,
-				 function_set=None,
-				 terminal_set=None,
-				 erc_range=None,
-				 fitness_type=SimpleFitness,
-				 bloat_weight=0.1,
-				 events=None):
-		if events is None:
-			events = ["after_creation"]
-		super().__init__(events, fitness_type)
+    def __init__(self,
+                 init_depth=None,
+                 function_set=None,
+                 terminal_set=None,
+                 erc_range=None,
+                 fitness_type=SimpleFitness,
+                 bloat_weight=0.1,
+                 events=None):
+        if events is None:
+            events = ["after_creation"]
+        super().__init__(events, fitness_type)
 
-		if init_depth is None:
-			init_depth = (2, 4)
+        if init_depth is None:
+            init_depth = (2, 4)
 
-		if function_set is None:
-			function_set = [(f_add, [int, int], int), (f_sub, [int, int], int),
+        if function_set is None:
+            function_set = [(f_add, [int, int], int), (f_sub, [int, int], int),
                             (f_mul, [int, int], int), (f_div, [int, int], int)]
 
-		if terminal_set is None:
-			terminal_set = [('x', int), ('y', int), ('z', int), (0, int), (1, int), (-1, int)]
+        if terminal_set is None:
+            terminal_set = [('x', int), ('y', int), ('z', int), (0, int), (1, int), (-1, int)]
 
-		self.init_depth = init_depth
-		self.function_set = function_set
-		self.terminal_set = terminal_set
-		self.erc_range = erc_range
-		self.bloat_weight = bloat_weight
+        self.init_depth = init_depth
+        self.function_set = function_set
+        self.terminal_set = terminal_set
+        self.erc_range = erc_range
+        self.bloat_weight = bloat_weight
 
     def create_individuals(self, n_individuals, higher_is_better):
         individuals = [AssemblyIndividual(function_set=self.function_set,
