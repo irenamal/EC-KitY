@@ -3,7 +3,6 @@ import shutil
 from time import time
 import sys
 import os
-import subprocess
 
 from eckity.algorithms.simple_evolution import SimpleEvolution
 from eckity.breeders.simple_breeder import SimpleBreeder
@@ -23,7 +22,6 @@ TYPED = True
 WINDOWS = False
 
 def clear_folder(path):
-    """save the survivors into directory of this run for keeping history"""
     folder = os.listdir(path)
     for f in folder:
         os.remove(os.path.join(path, f))
@@ -201,6 +199,11 @@ def main():
     algo.population.sub_populations[0].evaluator._evaluate_individual(trained_survivor)
     print('total time:', time() - start_time)
     clear_folder(os.path.join(root_path, "survivors"))
+
+    # Delete the folders created for each thread
+    for file in os.listdir("."):
+        if file.__contains__("corewars8086_"):
+            shutil.rmtree(file)
 
 
 if __name__ == '__main__':

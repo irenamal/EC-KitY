@@ -1,3 +1,4 @@
+import csv
 import os
 import random
 import sys
@@ -7,6 +8,11 @@ import numpy as np
 from eckity.evaluators.simple_individual_evaluator import SimpleIndividualEvaluator
 import shutil
 from sklearn.preprocessing import StandardScaler, PowerTransformer
+
+# 0 - score, 1 - lifetime, 2 - written bytes
+SCORE = 0
+LIFETIME = 1
+BYTES = 2
 
 class AssemblyEvaluator(SimpleIndividualEvaluator):
 # Allow some evaluators run in parallel. Need to modify the paths for the execution.
@@ -45,55 +51,29 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         return 0
 
     def _read_scores(self, path, individual_name1, individual_name2):
-        all_individual_scores = []
-        all_alive_time = []
-        all_bytes_written = []
-        all_group_scores = []
-        score1 = 0
-        score2 = 0
-        score = 0
-        alive_time1 = 0
-        alive_time2 = 0
+        group_data = []
+        indiv_data = []
+        group_index = 0
+
         with open(os.path.join(path, "scores.csv")) as scores:
+            info = csv.reader(scores)
             flag_ind = False
-            scores = scores.readlines()
-            for line in scores:
-                if line == "Groups:\n":
+            for index, line in enumerate(info):
+                if line.__contains__("Groups:"):
                     continue
-                if not flag_ind and line != "Warriors:\n" and line != "\n":
-                    line = line.split(',')
+                if not flag_ind and not line.__contains__("Warriors:") and line != []:
+                    group_data.append(line[1:])
                     if line[0] == individual_name1[:-1]:
-                        score = float(line[1][:-1])
-                    all_group_scores.append(float(line[1][:-1]))
+                        group_index = index - 1
                     continue
-                if line == "Warriors:\n":
+                if line.__contains__("Warriors:"):
                     flag_ind = True
                     continue
                 if flag_ind:
-                    line = line.split(',')
-                    if line[0] == individual_name1:
-                        score1 = float(line[1])
-                        alive_time1 = float(line[2])
-                        bytes1 = float(line[3][:-1])
-                    if line[0] == individual_name2:
-                        score2 = float(line[1])
-                        alive_time2 = float(line[2])
-                        bytes2 = float(line[3][:-1])
-                    all_individual_scores.append(float(line[1]))
-                    all_alive_time.append(float(line[2]))
-                    all_bytes_written.append(float(line[3][:-1]))
-        data = [all_individual_scores, all_alive_time, all_bytes_written]
-        data = np.transpose(data)
+                    indiv_data.append(line[1:])
 
-        return {"data": data,
-                "all_group_scores": np.array(all_group_scores).reshape(-1,1),
-                "score": all_group_scores.index(score),
-                "score1": all_individual_scores.index(score1),
-                "score2": all_individual_scores.index(score2),
-                "alive1": all_alive_time.index(alive_time1),
-                "alive2": all_alive_time.index(alive_time2),
-                "bytes1": all_bytes_written.index(bytes1),
-                "bytes2": all_bytes_written.index(bytes2) }
+        return {"group_data": group_data, "indiv_data": indiv_data,
+                "group_index": group_index, "indiv1_index": group_index, "indiv2_index": group_index + 1}
 
     def _evaluate_individual(self, individual):
         """
@@ -151,25 +131,29 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         results = self._read_scores(os.path.join(self.root_path, "corewars8086_" + worker),
                                     individual_name1, individual_name2)
 
-        normalized_data = normalize_data(results["data"])
-     #   normalized_group_scores = normalize_data(results["all_group_scores"])
+        # The data should be in format of m_samples x n_features
+        normalized_indiv_scores = normalize_data(results["indiv_data"])
+        normalized_group_scores = normalize_data(results["group_data"])
 
-        fitness1 = fitness_calculation(normalized_data[results["score1"]][0],
-                                       normalized_data[results["alive1"]][1],
-                                       normalized_data[results["bytes1"]][2])
-        fitness2 = fitness_calculation(normalized_data[results["score2"]][0],
-                                       normalized_data[results["alive2"]][1],
-                                       normalized_data[results["bytes2"]][2])
-        #fitness = round(normalized_group_scores[results["score"]][0], 5)
-        survivor_score = normalized_data[results["score1"]][0] + normalized_data[results["score2"]][0]
-        survivor_alive = max(normalized_data[results["alive1"]][1], normalized_data[results["alive2"]][1])
-        survivor_bytes = normalized_data[results["bytes1"]][2] + normalized_data[results["bytes2"]][2]
-        fitness = fitness_calculation(survivor_score, survivor_alive, survivor_bytes)
+        fitness1 = fitness_calculation(normalized_indiv_scores[results["indiv1_index"]][SCORE],
+                                       normalized_indiv_scores[results["indiv1_index"]][LIFETIME],
+                                       normalized_indiv_scores[results["indiv1_index"]][BYTES])
+        fitness2 = fitness_calculation(normalized_indiv_scores[results["indiv2_index"]][SCORE],
+                                       normalized_indiv_scores[results["indiv2_index"]][LIFETIME],
+                                       normalized_indiv_scores[results["indiv2_index"]][BYTES])
+        fitness = fitness_calculation(normalized_group_scores[results["group_index"]][SCORE],
+                                       normalized_group_scores[results["group_index"]][LIFETIME],
+                                       normalized_group_scores[results["group_index"]][BYTES])
+
         print("{} score: {}".format(individual_name1, fitness1))
         print("{} score: {}".format(individual_name2, fitness2))
         print("Total {} score: {}".format(individual_name2[:-1], fitness))
 
-        return [fitness1, fitness2, fitness, [survivor_score, survivor_alive, survivor_bytes]]  # how many did the survivor beat * its partial score?
+        fitness_components = [normalized_group_scores[results["group_index"]][SCORE],
+                              normalized_group_scores[results["group_index"]][LIFETIME],
+                              normalized_group_scores[results["group_index"]][BYTES]]
+
+        return [fitness1, fitness2, fitness, fitness_components]  # how many did the survivor beat * its partial score?
 
 def normalize_data(data):
     return StandardScaler().fit_transform(data)
