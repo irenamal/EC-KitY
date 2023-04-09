@@ -123,7 +123,7 @@ def main():
                        [(lambda const, *args: print("dw {}".format(const)), ["const", "section"], "section")] + \
                        [(lambda op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "const"],
                          "address")] + \
-                       [(lambda *args: "push cs\npop es", ["section"], "section")]
+                       [(lambda *args: print("push cs\npop es"), ["section"], "section")]
                        #[(lambda op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "reg"],
                         # "address")]
 

@@ -108,8 +108,8 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
 
         individual_name1 = str(individual.id) + "try1"
         individual_name2 = str(individual.id) + "try2"
-        file_path1 = os.path.join(self.root_path, 'survivors', individual_name1 + '.asm')
-        file_path2 = os.path.join(self.root_path, 'survivors', individual_name2 + '.asm')
+        file_path1 = os.path.join(self.root_path, "corewars8086_" + worker, 'survivors', individual_name1 + '.asm')
+        file_path2 = os.path.join(self.root_path, "corewars8086_" + worker, 'survivors', individual_name2 + '.asm')
         self._write_survivor_to_file(individual.tree1, file_path1)
         self._write_survivor_to_file(individual.tree2, file_path2)
 
