@@ -345,7 +345,7 @@ class Algorithm(Operator):
         board.set_xlabel('Generation number')
         board.set_ylabel('{} values'.format(title))
         board.set_title('{}'.format(title))
-        board.legend(loc='upper left', prop={'size':5})
+        board.legend(loc='lower right', prop={'size':5})
 
     @abstractmethod
     def finish(self):

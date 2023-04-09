@@ -5,7 +5,7 @@ import collections
 
 import numpy as np
 from numbers import Number
-from random import randint, uniform, random
+from random import randint, uniform, random, choice
 
 from eckity.base.utils import arity, return_type, params_type
 from eckity.genetic_encodings.gp.tree.utils import _generate_args
@@ -68,6 +68,15 @@ class Tree(Individual):
             self.terminal_set = terminal_set
 
         self.n_terminals = len(terminal_set)
+
+        self.categorized_terminals  = {term[1] for term in self.terminal_set}
+        self.categorized_terminals = {type:[term for term in self.terminal_set if type==term[1]] for type in
+                                      self.categorized_terminals}
+        self.categorized_functions = {func[2] for func in self.function_set}
+        self.categorized_functions = {type: [func for func in self.function_set if type == func[2]] for type in
+                                      self.categorized_functions}
+
+
         self.vars = []  # [t[0] for t in self.terminal_set if not isinstance(t[0], Number)]
         self.erc_range = erc_range
         self.n_functions = len(self.function_set)
@@ -100,16 +109,17 @@ class Tree(Individual):
                 pos[0] += 1
                 res = self._add_tree(pos, new_node)
                 if res is None:
-                    return node.parameters[i] == new_node.type
+                    return [node.parameters[i] == new_node.type, node.parameters[i]]
                 elif res != -1:
                     return res
         return res
 
     def add_tree(self, node):
-        if 0 == self.size() or self._add_tree([0], node):
+        res = self._add_tree([0], node) # [0] - t/f [1] - requested type
+        if 0 == self.size() or res[0]:
             self.tree.append(node)
-            return True
-        return False  # node's type doesn't match the expected
+            return [True, None]
+        return res  # node's type doesn't match the expected
 
     def empty_tree(self):
         self.tree = []
@@ -141,19 +151,37 @@ class Tree(Individual):
 
         return self._depth([0], 0)
 
-    def random_function(self):
+    def random_function(self, type=None):
         """select a random function"""
-        rand_func = self.function_set[randint(0, self.n_functions - 1)]
+        if type is None:
+            rand_func = self.function_set[randint(0, self.n_functions - 1)]
+        else:
+            if type in self.categorized_functions.keys(): # the requested type exists
+                rand_func = choice(self.categorized_functions[type])
+            else:
+                return self.default_function()
         return FunctionNode(function=rand_func[0], num_of_parameters=len(rand_func[1]),
                             parameters=rand_func[1], type=rand_func[2])
 
-    def random_terminal(self):
+    def random_terminal(self, type=None):
         """Select a random terminal or create an ERC terminal"""
         if self.erc_range is None:
-            node = self.terminal_set[randint(0, self.n_terminals - 1)]
+            if type is None:
+                node = self.terminal_set[randint(0, self.n_terminals - 1)]
+            else:
+                if type in self.categorized_terminals.keys(): # the requested type exists
+                    node = choice(self.categorized_terminals[type])
+                else:
+                    return self.default_terminal()
         else:
             if random() > 0.5:
-                node = self.terminal_set[randint(0, self.n_terminals - 1)]
+                if type is None:
+                    node = self.terminal_set[randint(0, self.n_terminals - 1)]
+                else:
+                    if type in self.categorized_terminals.keys():  # the requested type exists
+                        node = choice(self.categorized_terminals[type])
+                    else:
+                        return self.default_terminal()
             else:
                 value = round(uniform(*self.erc_range), 4)
                 node = (value, type(value) if self.terminal_set[0][1] is not None else None)

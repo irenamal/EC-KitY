@@ -101,7 +101,7 @@ def main():
                          ["op_function", "address", "section"], "section")] + \
                        [(lambda opcode, op, *args: print("{} {}".format(opcode, op)),
                          ["op_function", "address_reg", "section"], "section")] + \
-                       [(lambda *args: print("call l{}".format(len(labels))),  ["section"], "call_func")] * 5 + \
+                       [(lambda *args: print("call l{}".format(len(labels))),  ["section"], "call_func")]  + \
                        [(lambda opcode, *args: print("{}".format(opcode)), ["op", "section"], "section")] + \
                        [(lambda opcode, *args: print("{}".format(opcode)), ["op_special", "section"], "section")] + \
                        [(lambda rep, opcode, *args: print("{} {}".format(rep, opcode)),
@@ -110,13 +110,13 @@ def main():
                        [(lambda op, *args: print("{} {}".format("push", op)), ["reg"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("pop", op)), ["pop_reg", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("pop", op)), ["reg", "section"], "section")] + \
-                       [(lambda opcode, *args: print("{} l{}".format(opcode, len(labels))), ["op_jmp", "label", "section"],
-                         "forward_jmp")] * 5 + \
-                       [(lambda opcode, *args: print("{} l{}".format(opcode, len(labels)-1)), ["op_jmp", "label", "section"],
-                         "backwards_jmp")] * 5 + \
-                       [(put_label, ["section"], "label")] * 10 + \
-                       [(put_label, ["section"], "section")] * 3 + \
-                       [(lambda *args: print("ret"), [""], "return")] + \
+                       [(lambda opcode, *args: print("{} l{}".format(opcode, len(labels))), ["op_jmp", "section"],
+                         "forward_jmp")]  + \
+                       [(lambda opcode, *args: print("{} l{}".format(opcode, len(labels) - 1)), ["op_jmp", "section"],
+                         "backwards_jmp")] + \
+                       [(put_label, ["section"], "label")] + \
+                       [(put_label, ["section"], "section")] + \
+                       [(lambda *args: print("ret"), ["section"], "return")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["address", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["address_reg", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["reg", "section"], "section")] + \
@@ -196,7 +196,10 @@ def main():
                         # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
     sys.stdout = original_stdout
     print("The winner's test run:")
-    algo.population.sub_populations[0].evaluator._evaluate_individual(trained_survivor)
+    test_results = algo.population.sub_populations[0].evaluator._evaluate_individual(trained_survivor)
+    print("Total fitness: {}\nTree1 fitness: {}\nTree2 fitness: {}\n"
+          "Score:{}, Lifetime: {}, Bytes written: {}".format(test_results[2], test_results[0], test_results[1],
+                                                              test_results[3][0], test_results[3][1], test_results[3][2]))
     print('total time:', time() - start_time)
     clear_folder(os.path.join(root_path, "survivors"))
 

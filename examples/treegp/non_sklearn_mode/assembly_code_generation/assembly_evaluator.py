@@ -29,15 +29,15 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
     def _write_survivor_to_file(self, tree, file_path):
         original_stdout = sys.stdout
         with open(file_path, 'w+') as f:
-            f.write("@start:\n")
+            #f.write("@start:\n")
             sys.stdout = f
             tree.execute()  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
             # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
             sys.stdout = original_stdout
-            f.write("@end:\n")
+            #f.write("@end:\n")
             f.seek(0, os.SEEK_END)
             while f.tell() < 512:
-                f.write("db 0xC0\n")
+                f.write("\ndb 0xC0")
                 f.seek(0, os.SEEK_END)
         f.close()
 
@@ -47,7 +47,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         stdout, stderr = proc.communicate()
         if "error" in str(stderr):
             print(stderr)
-            return -10  # fitness = -1
+            return -3  # fitness = -1
         return 0
 
     def _read_scores(self, path, individual_name1, individual_name2):
@@ -116,12 +116,12 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         score1 = self._compile_survivor(file_path1, individual_name1, survivors_path, nasm_path)
         score2 = self._compile_survivor(file_path2, individual_name2, survivors_path, nasm_path)
 
-        if score1 == -10 or score2 == -10:  # one of the trees in invalid
+        if score1 == -3 or score2 == -3:  # one of the trees in invalid
             if os.path.exists(os.path.join(survivors_path, individual_name1)):
                 os.remove(os.path.join(survivors_path, individual_name1))
             if os.path.exists(os.path.join(survivors_path, individual_name2)):
                 os.remove(os.path.join(survivors_path, individual_name2))
-            return [score1, score2, min(score1, score2), [-10, -10, -10]]
+            return [score1, score2, min(score1, score2), [-3, -3, -3]]
 
         os.system("cd {} && java -cp {} il.co.codeguru.corewars8086.CoreWarsEngine".format(os.path.join(self.root_path, "corewars8086_" + worker), self.engine)) # & cgx.bat
         os.remove(os.path.join(survivors_path, individual_name1))
@@ -145,9 +145,9 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                                        normalized_group_scores[results["group_index"]][LIFETIME],
                                        normalized_group_scores[results["group_index"]][BYTES])
 
-        print("{} score: {}".format(individual_name1, fitness1))
-        print("{} score: {}".format(individual_name2, fitness2))
-        print("Total {} score: {}".format(individual_name2[:-1], fitness))
+        #print("{} score: {}".format(individual_name1, fitness1))
+        #print("{} score: {}".format(individual_name2, fitness2))
+        #print("Total {} score: {}".format(individual_name2[:-1], fitness))
 
         fitness_components = [normalized_group_scores[results["group_index"]][SCORE],
                               normalized_group_scores[results["group_index"]][LIFETIME],
@@ -159,4 +159,4 @@ def normalize_data(data):
     return StandardScaler().fit_transform(data)
 
 def fitness_calculation(score, alive_time, bytes_written):
-    return round(0.5 * score + 0.25 * alive_time + 0.25 * bytes_written, 5)
+    return round(0.33 * score + 0.33 * alive_time + 0.33 * bytes_written, 5)

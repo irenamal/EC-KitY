@@ -38,7 +38,7 @@ class GrowCreator(GPTreeCreator):
         """
         super().__init__(init_depth=init_depth, function_set=function_set, terminal_set=terminal_set,
                          erc_range=erc_range, bloat_weight=bloat_weight, events=events)
-        self.range_size = 10 * (len(terminal_set) + len(function_set))
+        self.range_size = 20
 
     @overrides
     def create_tree(self, tree_ind, max_depth=5):
@@ -85,28 +85,24 @@ class GrowCreator(GPTreeCreator):
              amount of tries, False otherwise.
 
         """
-
+        req_type = None
         for i in range(self.range_size + 1):
             if i == self.range_size:
-                return False
+                return False # will get here in cases of reaching maximum depth and needing a function node
             if depth < self.init_depth[0]:
-                node = tree_ind.random_function()
+                node = tree_ind.random_function(req_type)
             elif depth >= max_depth:
-                node = tree_ind.random_terminal()
+                node = tree_ind.random_terminal(req_type)
             else:  # intermediate depth, grow
                 if random() > 0.5:
-                    if random() > 0.05:
-                        node = tree_ind.random_function()
-                    else:
-                        node = tree_ind.default_function()
+                    node = tree_ind.random_function(req_type)
                 else:
-                    if random() > 0.1:
-                        node = tree_ind.random_terminal()
-                    else:
-                        node = tree_ind.default_terminal()
+                     node = tree_ind.random_terminal(req_type)
 
-        # add the new node to the tree of the given individual
-            if tree_ind.add_tree(node):
+            # add the new node to the tree of the given individual
+            res = tree_ind.add_tree(node)
+            req_type = res[1] # the function returned the requested type, ask for it in the next round
+            if res[0]: # succeeded to place node
                 break
 
         # recursively add arguments to the function node, according to its arity.
