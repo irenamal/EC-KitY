@@ -7,7 +7,7 @@ import threading
 import numpy as np
 from eckity.evaluators.simple_individual_evaluator import SimpleIndividualEvaluator
 import shutil
-from sklearn.preprocessing import StandardScaler, PowerTransformer
+from sklearn.preprocessing import StandardScaler, PowerTransformer, MinMaxScaler
 
 # 0 - score, 1 - lifetime, 2 - written bytes
 SCORE = 0
@@ -29,12 +29,12 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
     def _write_survivor_to_file(self, tree, file_path):
         original_stdout = sys.stdout
         with open(file_path, 'w+') as f:
-            #f.write("@start:\n")
+            f.write("@start:\n")
             sys.stdout = f
             tree.execute()  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
             # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
             sys.stdout = original_stdout
-            #f.write("@end:\n")
+            f.write("@end:\n")
             f.seek(0, os.SEEK_END)
             while f.tell() < 512:
                 f.write("\ndb 0xC0")
@@ -47,7 +47,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         stdout, stderr = proc.communicate()
         if "error" in str(stderr):
             print(stderr)
-            return -3  # fitness = -1
+            return -1  # fitness = -1
         return 0
 
     def _read_scores(self, path, individual_name1, individual_name2):
@@ -98,7 +98,19 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker)):
             os.mkdir(os.path.join(self.root_path, "corewars8086_" + worker))
         survivors_path = os.path.join(self.root_path, "corewars8086_" + worker, "survivors")
-        shutil.copytree(os.path.join(self.root_path, "corewars8086", "survivors"), survivors_path, dirs_exist_ok=True)
+        all_train_set = os.listdir(os.path.join(self.root_path, "corewars8086", "survivors"))
+        all_train_set = list(set([survivor[:-1] for survivor in all_train_set]))
+        chosen_train_combination = random.sample(all_train_set, k=11)
+        if not os.path.exists(survivors_path):
+            os.mkdir(survivors_path)
+        for f in os.listdir(survivors_path):
+            try:
+                os.remove(os.path.join(survivors_path, f)) # remove previous survivors
+            except Exception:
+                continue
+        [shutil.copy(os.path.join(self.root_path, "corewars8086", "survivors", survivor+i),
+                     survivors_path) for i in ["1","2"] for survivor in chosen_train_combination]
+
         if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker, self.engine)):
             shutil.copy(os.path.join(self.root_path, "corewars8086", self.engine),
                         os.path.join(self.root_path, "corewars8086_" + worker, self.engine))
@@ -116,14 +128,14 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         score1 = self._compile_survivor(file_path1, individual_name1, survivors_path, nasm_path)
         score2 = self._compile_survivor(file_path2, individual_name2, survivors_path, nasm_path)
 
-        if score1 == -3 or score2 == -3:  # one of the trees in invalid
+        if score1 == -1 or score2 == -1:  # one of the trees in invalid
             if os.path.exists(os.path.join(survivors_path, individual_name1)):
                 os.remove(os.path.join(survivors_path, individual_name1))
             if os.path.exists(os.path.join(survivors_path, individual_name2)):
                 os.remove(os.path.join(survivors_path, individual_name2))
-            return [score1, score2, min(score1, score2), [-3, -3, -3]]
+            return [score1, score2, min(score1, score2), [-1, -1, -1]]
 
-        os.system("cd {} && java -cp {} il.co.codeguru.corewars8086.CoreWarsEngine".format(os.path.join(self.root_path, "corewars8086_" + worker), self.engine)) # & cgx.bat
+        os.system("cd {} && java -jar {}".format(os.path.join(self.root_path, "corewars8086_" + worker), self.engine)) # & cgx.bat
         os.remove(os.path.join(survivors_path, individual_name1))
         os.remove(os.path.join(survivors_path, individual_name2))
 
@@ -156,7 +168,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         return [fitness1, fitness2, fitness, fitness_components]  # how many did the survivor beat * its partial score?
 
 def normalize_data(data):
-    return StandardScaler().fit_transform(data)
+    return MinMaxScaler().fit_transform(data) # [0-1] range
 
 def fitness_calculation(score, alive_time, bytes_written):
-    return round(0.33 * score + 0.33 * alive_time + 0.33 * bytes_written, 5)
+    return round(0.5 * score + 0.25 * alive_time + 0.25 * bytes_written, 5)

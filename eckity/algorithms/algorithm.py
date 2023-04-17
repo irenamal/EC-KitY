@@ -244,9 +244,10 @@ class Algorithm(Operator):
         score_values = []
         alive_values = []
         bytes_values = []
-        generations = range(0, self.max_generation)
+
         run_path = os.path.join(self.root_path, "survivors_" + str(time()))
         os.mkdir(run_path)
+        last_gen = 0
         for gen in range(self.max_generation):
             generation_fitness_values = []
             generation_fitness_parts_values = []
@@ -255,9 +256,9 @@ class Algorithm(Operator):
 
             self.set_generation_seed(self.next_seed())
             self.generation_iteration(gen)
-            if self.should_terminate(self.population,
+            if self.termination_checker.should_terminate(self.population,
                                                          self.best_of_run_,
-                                                         gen):
+                                                         self.generation_num):
                 self.final_generation_ = gen
                 self.publish('after_generation')
                 break
@@ -283,6 +284,16 @@ class Algorithm(Operator):
             score_values.append(self.calculate_statistics(generation_fitness_parts_values[:,0]))
             alive_values.append(self.calculate_statistics(generation_fitness_parts_values[:,1]))
             bytes_values.append(self.calculate_statistics(generation_fitness_parts_values[:,2]))
+            last_gen = gen
+
+            if self.termination_checker.should_terminate(self.population,
+                                                         self.best_of_run_,
+                                                         self.generation_num):
+                self.final_generation_ = gen
+                self.publish('after_generation')
+                break
+            self.publish('after_generation')
+
 
         fitness_values = np.array(fitness_values)
         score_values = np.array(score_values)
@@ -295,16 +306,16 @@ class Algorithm(Operator):
         plot_bytes = plt.subplot2grid((2, 3), (1, 2), rowspan=1, colspan=1)
 
         # fitness graph
-        self.plot_graph(plot_fitness, generations, fitness_values[:, 0], fitness_values[:, 1], fitness_values[:, 2], "Fitness")
+        self.plot_graph(plot_fitness, range(0, last_gen + 1), fitness_values[:, 0], fitness_values[:, 1], fitness_values[:, 2], "Fitness")
 
         # scores graph
-        self.plot_graph(plot_scores, generations, score_values[:, 0], score_values[:, 1], score_values[:, 2], "Scores")
+        self.plot_graph(plot_scores, range(0, last_gen + 1), score_values[:, 0], score_values[:, 1], score_values[:, 2], "Scores")
 
         # alive time graph
-        self.plot_graph(plot_alive, generations, alive_values[:, 0], alive_values[:, 1], alive_values[:, 2], "Lifetime")
+        self.plot_graph(plot_alive, range(0, last_gen + 1), alive_values[:, 0], alive_values[:, 1], alive_values[:, 2], "Lifetime")
 
         # written bytes graph
-        self.plot_graph(plot_bytes, generations, bytes_values[:, 0], bytes_values[:, 1], bytes_values[:, 2], "Written bytes")
+        self.plot_graph(plot_bytes, range(0, last_gen + 1), bytes_values[:, 0], bytes_values[:, 1], bytes_values[:, 2], "Written bytes")
 
         plt.tight_layout()
         plt.savefig(os.path.join(run_path, "fitness_to_gen.png"))

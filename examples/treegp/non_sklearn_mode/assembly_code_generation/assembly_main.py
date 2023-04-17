@@ -9,6 +9,7 @@ from eckity.breeders.simple_breeder import SimpleBreeder
 from eckity.creators.gp_creators.grow_typed import GrowCreator
 from eckity.genetic_operators.crossovers.subtree_crossover import SubtreeCrossover
 from eckity.genetic_operators.mutations.assembly_replacing_mutation import AssemblyReplacingMutation
+from eckity.genetic_operators.mutations.assembly_duplication_mutation import AssemblyDuplicationMutation
 from eckity.genetic_operators.mutations.subtree_mutation import SubtreeMutation
 from eckity.genetic_operators.mutations.erc_mutation import ERCMutation
 from eckity.genetic_operators.selections.tournament_selection import TournamentSelection
@@ -68,7 +69,6 @@ def main():
                        [(section, ["label", "section", "backwards_jmp"], "section")] + \
                        [(section, ["section", "forward_jmp", "section", "label", "section"], "section")] + \
                        [(section, ["label", "section", "call_func", "backwards_jmp", "label", "section", "return"], "section")] + \
-                       [(section, ["section", "section"], "section")] + \
                        [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
                          ["op_double", "reg", "reg", "section"], "section")] + \
                        [(lambda dst, src, *args: print("{} {},{}".format("xchg", dst, src)),
@@ -107,7 +107,7 @@ def main():
                        [(lambda rep, opcode, *args: print("{} {}".format(rep, opcode)),
                          ["op_rep", "op", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("push", op)), ["push_reg", "section"], "section")] + \
-                       [(lambda op, *args: print("{} {}".format("push", op)), ["reg"], "section")] + \
+                       [(lambda op, *args: print("{} {}".format("push", op)), ["reg", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("pop", op)), ["pop_reg", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("pop", op)), ["reg", "section"], "section")] + \
                        [(lambda opcode, *args: print("{} l{}".format(opcode, len(labels))), ["op_jmp", "section"],
@@ -115,7 +115,6 @@ def main():
                        [(lambda opcode, *args: print("{} l{}".format(opcode, len(labels) - 1)), ["op_jmp", "section"],
                          "backwards_jmp")] + \
                        [(put_label, ["section"], "label")] + \
-                       [(put_label, ["section"], "section")] + \
                        [(lambda *args: print("ret"), ["section"], "return")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["address", "section"], "section")] + \
                        [(lambda op, *args: print("{} {}".format("jmp", op)), ["address_reg", "section"], "section")] + \
@@ -125,7 +124,7 @@ def main():
                          "address")] + \
                        [(lambda *args: print("push cs\npop es"), ["section"], "section")]
                        #[(lambda op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "reg"],
-                        # "address")]
+                        # "address")] + \ [(section, ["section", "section"], "section")] + \ [(put_label, ["section"], "section")] + \
 
         random.shuffle(function_set)
 
@@ -141,13 +140,13 @@ def main():
         root_path = "/cs_storage/irinamal/thesis/"
         nasm_path = "/cs_storage/irinamal/thesis/nasm-2.15.05/nasm"
 
-    competition_size = 10
+    competition_size = 40
 
     all_survivors = os.listdir(competition_survivors_path)
     group_survivors = list(set([survivor[:-1] for survivor in all_survivors]))  # avoid the warrior enumeration
 
     train_set = random.sample(group_survivors, k=int(0.7 * competition_size))  # train set
-    test_set = random.sample([test for test in group_survivors if test not in train_set], k=int(0.5 * competition_size))  # test set
+    test_set = random.sample([test for test in group_survivors if test not in train_set], k=int(0.3 * competition_size))  # test set
 
     clear_folder(run_survivors_path)
     copy_survivors(competition_survivors_path, run_survivors_path, train_set)
@@ -158,27 +157,29 @@ def main():
                                            terminal_set=terminal_set,
                                            function_set=function_set,
                                            bloat_weight=0.00001),
-                      population_size=50,
+                      population_size=100,
                       # user-defined fitness evaluation method
                       evaluator=AssemblyEvaluator(root_path=root_path, nasm_path=nasm_path),
                       # this is a maximization problem (fitness is accuracy), so higher fitness is better
                       higher_is_better=True,
                       elitism_rate=0.0,
                       # genetic operators sequence to be applied in each generation
+                      # arity of an operator is on how many individuals it works
                       operators_sequence=[
-                          AssemblyReplacingMutation(probability=0.5, arity=2),  # first because it depends on the fitness
-                          SubtreeCrossover(probability=0.8, arity=2),
-                          SubtreeMutation(probability=0.05, arity=1),
+                          AssemblyDuplicationMutation(probability=0.7, arity=1),  # first because it depends on the fitness
+                          AssemblyReplacingMutation(probability=0.3, arity=2), # swap between inner trees of 2 individuals
+                          SubtreeCrossover(probability=0.3, arity=2), # crossover inner trees of 2 individuals
+                          SubtreeMutation(probability=0.1, arity=1),
                       ],
                       selection_methods=[
                           # (selection method, selection probability) tuple
-                          (TournamentSelection(tournament_size=4, higher_is_better=True), 1)
+                          (TournamentSelection(tournament_size=10, higher_is_better=True), 1)
                       ]
                       ),
         breeder=SimpleBreeder(),
-        max_workers=1,
-        max_generation=20,
-        termination_checker=ThresholdFromTargetTerminationChecker(optimal=5, threshold=0.01),
+        max_workers=16,
+        max_generation=30,
+        termination_checker=ThresholdFromTargetTerminationChecker(optimal=1, threshold=0.00001),
         statistics=BestAverageWorstStatistics(),
         random_seed=10,
         root_path=root_path
@@ -190,17 +191,20 @@ def main():
     # execute the best individual after the evolution process ends
     clear_folder(run_survivors_path)
     copy_survivors(competition_survivors_path, run_survivors_path, test_set)
-    original_stdout = sys.stdout
-    with open(os.path.join(root_path, "winners", str(time())+'.asm'), 'w+') as sys.stdout:
-        trained_survivor = algo.execute()  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
-                        # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
-    sys.stdout = original_stdout
+
     print("The winner's test run:")
-    test_results = algo.population.sub_populations[0].evaluator._evaluate_individual(trained_survivor)
+    test_results = algo.population.sub_populations[0].evaluator._evaluate_individual(algo.best_of_run_copy_)
     print("Total fitness: {}\nTree1 fitness: {}\nTree2 fitness: {}\n"
           "Score:{}, Lifetime: {}, Bytes written: {}".format(test_results[2], test_results[0], test_results[1],
                                                               test_results[3][0], test_results[3][1], test_results[3][2]))
     print('total time:', time() - start_time)
+
+    original_stdout = sys.stdout
+    with open(os.path.join(root_path, "winners", "t_"+str(time())+"f_"+str(test_results[2])+'.asm'), 'w+') as sys.stdout:
+        algo.execute()  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
+                        # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
+    sys.stdout = original_stdout
+
     clear_folder(os.path.join(root_path, "survivors"))
 
     # Delete the folders created for each thread

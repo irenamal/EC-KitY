@@ -30,7 +30,6 @@ class SubtreeCrossover(GeneticOperator):
                 break
             subtrees[0] = individuals[0].random_subtree()
 
-        self.applied_individuals = individuals
         return individuals
 
     def crossover_type1(self, individuals):
@@ -46,9 +45,15 @@ class SubtreeCrossover(GeneticOperator):
         return individuals
 
     def crossover_type3(self, individuals):
-        temp_tree = individuals[0].tree1
-        individuals[0].tree1 = individuals[1].tree1
-        individuals[1].tree1 = temp_tree
+        xo_result = self._apply([individuals[0].tree1, individuals[1].tree2])
+        individuals[0].tree1 = xo_result[0]
+        individuals[1].tree2 = xo_result[1]
+        return individuals
+
+    def crossover_type4(self, individuals):
+        xo_result = self._apply([individuals[0].tree2, individuals[1].tree1])
+        individuals[0].tree2 = xo_result[0]
+        individuals[1].tree1 = xo_result[1]
         return individuals
 
     def apply(self, individuals):
@@ -76,15 +81,23 @@ class SubtreeCrossover(GeneticOperator):
         # choose one option of XO from 3 types:
         # 1. between the two first trees
         # 2. between the two second trees
-        # 3. replace one first tree with the other one
-        if len(individuals) < 2:
-            return individuals
-        option = random.random()
-        if 0 <= option < 0.33:
-            return self.crossover_type1(individuals)
-        elif 0.33 <= option < 0.66:
-            return self.crossover_type2(individuals)
-        elif 0.66 <= option < 1:
-            return self.crossover_type3(individuals)
+        # 3. between first and second
+        # 4. between second and first
+
+        if len(individuals) == 1: # between its own subtrees
+            individuals = self.crossover_type3([individuals[0], individuals[0]])[:-1]
+        elif len(individuals) < 2:
+            option = random.random()
+            if 0 <= option < 0.25:
+                individuals = self.crossover_type1(individuals)
+            elif 0.25 <= option < 0.5:
+                individuals = self.crossover_type2(individuals)
+            elif 0.5 <= option < 0.75:
+                individuals = self.crossover_type3(individuals)
+            elif 0.75 <= option <= 1:
+                individuals = self.crossover_type4(individuals)
+
+        self.applied_individuals = individuals
+        return individuals
 
 

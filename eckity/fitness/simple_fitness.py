@@ -51,7 +51,7 @@ class SimpleFitness(Fitness):
         """
         if not self._is_evaluated:
             #raise ValueError('Fitness not evaluated yet')
-            return -4
+            return -2
         return self.fitness
 
     @overrides

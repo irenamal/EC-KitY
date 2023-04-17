@@ -44,4 +44,6 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
         bool
             True if the algorithm should terminate early, False otherwise.
         """
-        return abs(best_individual.get_pure_fitness() - self.optimal) <= self.threshold
+        # fitness and score should be the best, which means 1. Lifetime and written bytes don't have to
+        return (abs(best_individual.get_pure_fitness() - self.optimal) <= self.threshold or
+                abs(best_individual.fitness_parts[0] - self.optimal) <= self.threshold) and gen_number >= 4

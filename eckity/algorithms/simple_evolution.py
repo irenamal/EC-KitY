@@ -109,6 +109,7 @@ class SimpleEvolution(Algorithm):
 
         self.termination_checker = termination_checker
         self.best_of_run_ = best_of_run_
+        self.best_of_run_copy_ = None
         self.best_of_gen = best_of_gen
         self.worst_of_gen = worst_of_gen
         self.max_generation = max_generation
@@ -146,8 +147,10 @@ class SimpleEvolution(Algorithm):
         # Evaluate the entire population and get the best individual
         self.best_of_gen = self.population_evaluator.act(self.population)
 
+        # clone in order to the winner stay the same at test run
         if self.best_of_gen.better_than(self.best_of_run_):
             self.best_of_run_ = self.best_of_gen
+            self.best_of_run_copy_ = self.best_of_gen.clone()
 
         self.worst_of_gen = self.population.sub_populations[0].get_worst_individual()
 
@@ -169,7 +172,7 @@ class SimpleEvolution(Algorithm):
             Output as computed by the best individual of the evolutionary run.
 
         """
-        print("The winner:")
+        #print("The winner:")
         self.best_of_run_.execute(**kwargs)
         return self.best_of_run_  # .execute(**kwargs)
 
