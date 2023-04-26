@@ -144,31 +144,32 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                                     individual_name1, individual_name2)
 
         # The data should be in format of m_samples x n_features
-        normalized_indiv_scores = normalize_data(results["indiv_data"])
-        normalized_group_scores = normalize_data(results["group_data"])
+        #normalized_indiv_scores = normalize_data(results["indiv_data"])
+        #normalized_group_scores = normalize_data(results["group_data"])
 
-        fitness1 = fitness_calculation(normalized_indiv_scores[results["indiv1_index"]][SCORE],
-                                       normalized_indiv_scores[results["indiv1_index"]][LIFETIME],
-                                       normalized_indiv_scores[results["indiv1_index"]][BYTES])
-        fitness2 = fitness_calculation(normalized_indiv_scores[results["indiv2_index"]][SCORE],
-                                       normalized_indiv_scores[results["indiv2_index"]][LIFETIME],
-                                       normalized_indiv_scores[results["indiv2_index"]][BYTES])
-        fitness = fitness_calculation(normalized_group_scores[results["group_index"]][SCORE],
-                                       normalized_group_scores[results["group_index"]][LIFETIME],
-                                       normalized_group_scores[results["group_index"]][BYTES])
+        norm_indiv1 = normalize_data(results["indiv_data"], results["indiv1_index"])
+        fitness1 = fitness_calculation(norm_indiv1[SCORE], norm_indiv1[LIFETIME], norm_indiv1[BYTES])
+        norm_indiv2 = normalize_data(results["indiv_data"], results["indiv2_index"])
+        fitness2 = fitness_calculation(norm_indiv2[SCORE], norm_indiv2[LIFETIME], norm_indiv2[BYTES])
+        norm_group = normalize_data(results["group_data"], results["group_index"])
+        fitness = fitness_calculation(norm_group[SCORE], norm_group[LIFETIME], norm_group[BYTES])
 
         #print("{} score: {}".format(individual_name1, fitness1))
         #print("{} score: {}".format(individual_name2, fitness2))
         #print("Total {} score: {}".format(individual_name2[:-1], fitness))
 
-        fitness_components = [normalized_group_scores[results["group_index"]][SCORE],
-                              normalized_group_scores[results["group_index"]][LIFETIME],
-                              normalized_group_scores[results["group_index"]][BYTES]]
+        return [fitness1, fitness2, fitness, norm_group]  # how many did the survivor beat * its partial score?
 
-        return [fitness1, fitness2, fitness, fitness_components]  # how many did the survivor beat * its partial score?
-
-def normalize_data(data):
-    return MinMaxScaler().fit_transform(data) # [0-1] range
+def normalize_data(data, index):
+    data = np.array(data).astype(float)
+    # normalized score by score/played_game
+    score = data[index][SCORE]
+    # normalize lifetime by log?
+    lifetime = data[index][LIFETIME] #math.log(data[index][LIFETIME], 2) if data[index][LIFETIME] > 0 else 0
+    # normilize bytes by log?
+    bytes = data[index][BYTES] #math.log(data[index][BYTES], 2) if data[index][BYTES] > 0 else 0
+    return [score, lifetime, bytes]
+    #return MinMaxScaler().fit_transform(data) # [0-1] range
 
 def fitness_calculation(score, alive_time, bytes_written):
-    return round(0.5 * score + 0.25 * alive_time + 0.25 * bytes_written, 5)
+    return round(score + 0.05 * alive_time + 0.05 * bytes_written, 5)

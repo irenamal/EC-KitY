@@ -99,7 +99,7 @@ class SimpleFitness(Fitness):
             True if this fitness score is better than the `other` fitness score, False otherwise
         """
         self.check_comparable_fitness_scores(other_fitness)
-        return self.get_augmented_fitness(ind) > other_fitness.get_augmented_fitness(other_ind) \
+        return self.get_augmented_fitness(ind) >= other_fitness.get_augmented_fitness(other_ind) \
             if self.higher_is_better \
             else self.get_augmented_fitness(ind) < other_fitness.get_augmented_fitness(other_ind)
 
