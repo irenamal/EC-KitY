@@ -61,11 +61,17 @@ class GrowCreator(GPTreeCreator):
         for i in range(self.range_size + 1):
             if i == self.range_size:
                 raise ValueError(f'Couldn\'t create tree. Check matching terminal types to parameter\'s types.')
-            elif self._create_tree(tree_ind, max_depth, 0):
+            if 0 < tree_ind.size(): # the tree isn't empty
+                res = True
+                for _ in range(tree_ind.tree[0].num_of_descendants):
+                    res = res and self._create_tree(tree_ind, max_depth, depth=tree_ind.size())
+                if res:
+                    break
+            elif 0 == tree_ind.size() and self._create_tree(tree_ind, max_depth, 0):
                 break
-            else:
-                tree_ind.empty_tree()
-                print("empty")
+
+            tree_ind.empty_tree()
+            print("empty")
 
     def _create_tree(self, tree_ind, max_depth=5, depth=0):
         """

@@ -132,7 +132,7 @@ def main():
     if WINDOWS:
         competition_survivors_path = "corewars8086\\competition_survivors"
         run_survivors_path = "corewars8086\\survivors\\"
-        nasm_path = "C:\\Users\\user\\AppData\\Local\\bin\\NASM\\nasm.exe"
+        nasm_path = "C:\\Users\\irinu\\Desktop\\thesis\\nasm-2.16.01\\nasm.exe"
         root_path = ".\\"
     else:
         competition_survivors_path = "/cs_storage/irinamal/thesis/corewars8086/competition_survivors"
@@ -140,7 +140,7 @@ def main():
         root_path = "/cs_storage/irinamal/thesis/"
         nasm_path = "/cs_storage/irinamal/thesis/nasm-2.15.05/nasm"
 
-    competition_size = 40
+    competition_size = 30
 
     all_survivors = os.listdir(competition_survivors_path)
     group_survivors = list(set([survivor[:-1] for survivor in all_survivors]))  # avoid the warrior enumeration
@@ -164,21 +164,21 @@ def main():
                       higher_is_better=True,
                       elitism_rate=0.0,
                       # genetic operators sequence to be applied in each generation
-                      # arity of an operator is on how many individuals it works
+                      # arity of an operator is on how many individuals it works on per time
                       operators_sequence=[
-                          AssemblyDuplicationMutation(probability=0.7, arity=1),  # first because it depends on the fitness
-                          AssemblyReplacingMutation(probability=0.3, arity=2), # swap between inner trees of 2 individuals
-                          SubtreeCrossover(probability=0.3, arity=2), # crossover inner trees of 2 individuals
-                          SubtreeMutation(probability=0.1, arity=1),
+                          AssemblyDuplicationMutation(probability=0.2, arity=1),  # first because it depends on the fitness
+                          AssemblyReplacingMutation(probability=0.2, arity=2), # swap between inner trees of 2 individuals
+                          SubtreeCrossover(probability=0.8, arity=2), # crossover inner trees of 2 individuals, can be more
+                          SubtreeMutation(probability=0.4, arity=1), # mutate a subtree of one inner tree of 1 individual
                       ],
                       selection_methods=[
                           # (selection method, selection probability) tuple
-                          (TournamentSelection(tournament_size=10, higher_is_better=True), 1)
+                          (TournamentSelection(tournament_size=4, higher_is_better=True), 1)
                       ]
                       ),
         breeder=SimpleBreeder(),
-        max_workers=16,
-        max_generation=30,
+        max_workers=8,
+        max_generation=50,
         termination_checker=ThresholdFromTargetTerminationChecker(optimal=1, threshold=0.00001),
         statistics=BestAverageWorstStatistics(),
         random_seed=10,
@@ -195,8 +195,10 @@ def main():
     print("The winner's test run:")
     test_results = algo.population.sub_populations[0].evaluator._evaluate_individual(algo.best_of_run_copy_)
     print("Total fitness: {}\nTree1 fitness: {}\nTree2 fitness: {}\n"
-          "Score:{}, Lifetime: {}, Bytes written: {}".format(test_results[2], test_results[0], test_results[1],
-                                                              test_results[3][0], test_results[3][1], test_results[3][2]))
+          "Score:{}, Lifetime: {}, Bytes written: {}, Writing rate:{}".format(test_results[2], test_results[0],
+                                                                               test_results[1],
+                                                                               test_results[3][0], test_results[3][1],
+                                                                               test_results[3][2], test_results[3][3]))
     print('total time:', time() - start_time)
 
     original_stdout = sys.stdout
@@ -208,7 +210,7 @@ def main():
     clear_folder(os.path.join(root_path, "survivors"))
 
     # Delete the folders created for each thread
-    for file in os.listdir("."):
+    for file in os.listdir(root_path):
         if file.__contains__("corewars8086_"):
             shutil.rmtree(file)
 

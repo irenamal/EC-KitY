@@ -2,6 +2,7 @@ from eckity.creators.creator import Creator
 from eckity.fitness.simple_fitness import SimpleFitness
 from eckity.genetic_encodings.gp.tree.functions import f_add, f_sub, f_mul, f_div
 from eckity.fitness.gp_fitness import GPFitness
+from eckity.genetic_encodings.gp.tree.tree_typed_node_individual import Tree
 from examples.treegp.non_sklearn_mode.assembly_code_generation.assembly_individual import AssemblyIndividual
 
 from abc import abstractmethod
@@ -57,6 +58,21 @@ class GPTreeCreator(Creator):
         # self.publish("after_creation")
 
         return individuals
+
+    def create_tree_of_type(self, root_type, init_depth):
+        # create a tree which root node is from the specified type
+        requested_type_tree = Tree(function_set=self.function_set,
+                                   terminal_set=self.terminal_set,
+                                   erc_range=self.erc_range,
+                                   fitness=GPFitness(bloat_weight=self.bloat_weight, higher_is_better=True),
+                                   init_depth=init_depth)
+        if root_type in set([pair[2] for pair in self.function_set]):
+            requested_type_tree.add_tree(requested_type_tree.random_function(root_type))
+            self.create_tree(requested_type_tree, init_depth[1]) # continue to build the tree
+        elif root_type in set([pair[1] for pair in self.terminal_set]):
+            requested_type_tree.add_tree(requested_type_tree.random_terminal(root_type)) # cannot be built anymore
+        return requested_type_tree
+
 
     @abstractmethod
     def create_tree(self, tree_ind, max_depth):

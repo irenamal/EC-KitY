@@ -11,10 +11,10 @@ opcodes_pointers = ["lea", "les", "lds"]
 opcode_ret = ["ret"]
 # specials: xchg, sal, sar, lea
 # not supported: jecxz, imul, idiv, push const, repnz and repnz with s/l/m
-general_registers = ["ax", "bx", "cx"]  # sp, "dx"
-pop_registers = ["ds", "es", "ss"]
-push_registers = ["cs", "ss", "ds", "es"]
-addressing_registers = ["[bx]", "[si]", "[di]", "[bp]"]
+general_registers = ["ax", "bx", "cx", "dx"]  # sp, "dx"
+addressing_registers = ["[bx]", "[si]", "[di]", "[bp]"] # ip "[ax]", "[cx]", "[dx]"
+pop_registers = general_registers + ["WORD " + add_reg for add_reg in addressing_registers] + ["ds", "es", "ss"]
+push_registers = pop_registers + ["cs"]
 labels = []
 consts = ["0x"+str(2*i) for i in range(-10, 100)] + ["@start", "@end"]  # 65535, "0xcccc"
 

@@ -19,16 +19,16 @@ class SubtreeCrossover(GeneticOperator):
 
         # assign the next individual's subtree to the current individual's tree
         for i in range(len(individuals) - 1):
-            for j in range(individuals[i].size()):  # crossover can fail due to type mismatch
-                if individuals[i].replace_subtree(subtrees[i + 1]):
-                    break
-                subtrees[i + 1] = individuals[i + 1].random_subtree()
+            if individuals[i].replace_subtree_by_type(subtrees[i + 1]):
+                print("xo applied on individual")
+            else:
+                print("no matching type {} in tree".format(subtrees[i + 1][0].type))
 
         # to complete the crossover circle, assign the first subtree to the last individual
-        for i in range(individuals[-1].size()):  # crossover can fail due to type mismatch
-            if individuals[-1].replace_subtree(subtrees[0]):
-                break
-            subtrees[0] = individuals[0].random_subtree()
+        if individuals[-1].replace_subtree_by_type(subtrees[0]):
+            print("xo applied on individual".format(individuals[-1]))
+        else:
+            print("no matching type {} in tree".format(subtrees[-1][0].type))
 
         return individuals
 
@@ -86,7 +86,9 @@ class SubtreeCrossover(GeneticOperator):
 
         if len(individuals) == 1: # between its own subtrees
             individuals = self.crossover_type3([individuals[0], individuals[0]])[:-1]
-        elif len(individuals) < 2:
+            print("xo was applied on tree {}".format(individuals[0].id))
+        elif len(individuals) >= 2:
+            print("xo was applied on tree {} and tree {}".format(individuals[0].id, individuals[1].id))
             option = random.random()
             if 0 <= option < 0.25:
                 individuals = self.crossover_type1(individuals)

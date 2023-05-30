@@ -244,6 +244,7 @@ class Algorithm(Operator):
         score_values = []
         alive_values = []
         bytes_values = []
+        rate_values = []
 
         run_path = os.path.join(self.root_path, "survivors_" + str(time()))
         os.mkdir(run_path)
@@ -281,9 +282,10 @@ class Algorithm(Operator):
 
             fitness_values.append(self.calculate_statistics(generation_fitness_values))
             generation_fitness_parts_values = np.array(generation_fitness_parts_values)
-            score_values.append(self.calculate_statistics(generation_fitness_parts_values[:,0]))
-            alive_values.append(self.calculate_statistics(generation_fitness_parts_values[:,1]))
-            bytes_values.append(self.calculate_statistics(generation_fitness_parts_values[:,2]))
+            score_values.append(self.calculate_statistics(generation_fitness_parts_values[:, 0]))
+            alive_values.append(self.calculate_statistics(generation_fitness_parts_values[:, 1]))
+            bytes_values.append(self.calculate_statistics(generation_fitness_parts_values[:, 2]))
+            rate_values.append(self.calculate_statistics(generation_fitness_parts_values[:, 3]))
             last_gen = gen
 
             if self.termination_checker.should_terminate(self.population,
@@ -294,16 +296,17 @@ class Algorithm(Operator):
                 break
             self.publish('after_generation')
 
-
         fitness_values = np.array(fitness_values)
         score_values = np.array(score_values)
         alive_values = np.array(alive_values)
         bytes_values = np.array(bytes_values)
+        rate_values = np.array(rate_values)
 
-        plot_fitness = plt.subplot2grid((2, 3), (0, 0), rowspan=1, colspan=3)
-        plot_scores = plt.subplot2grid((2, 3), (1, 0), rowspan=1, colspan=1)
-        plot_alive = plt.subplot2grid((2, 3), (1, 1), rowspan=1, colspan=1)
-        plot_bytes = plt.subplot2grid((2, 3), (1, 2), rowspan=1, colspan=1)
+        plot_fitness = plt.subplot2grid((2, 4), (0, 0), rowspan=1, colspan=4)
+        plot_scores = plt.subplot2grid((2, 4), (1, 0), rowspan=1, colspan=1)
+        plot_alive = plt.subplot2grid((2, 4), (1, 1), rowspan=1, colspan=1)
+        plot_bytes = plt.subplot2grid((2, 4), (1, 2), rowspan=1, colspan=1)
+        plot_rate = plt.subplot2grid((2, 4), (1, 3), rowspan=1, colspan=1)
 
         # fitness graph
         self.plot_graph(plot_fitness, range(0, last_gen + 1), fitness_values[:, 0], fitness_values[:, 1], fitness_values[:, 2], "Fitness")
@@ -316,6 +319,9 @@ class Algorithm(Operator):
 
         # written bytes graph
         self.plot_graph(plot_bytes, range(0, last_gen + 1), bytes_values[:, 0], bytes_values[:, 1], bytes_values[:, 2], "Written bytes")
+
+        # writing rate graph
+        self.plot_graph(plot_rate, range(0, last_gen + 1), rate_values[:, 0], rate_values[:, 1], rate_values[:, 2], "Writing rate")
 
         plt.tight_layout()
         plt.savefig(os.path.join(run_path, "fitness_to_gen.png"))

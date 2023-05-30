@@ -13,18 +13,19 @@ from sklearn.preprocessing import StandardScaler, PowerTransformer, MinMaxScaler
 SCORE = 0
 LIFETIME = 1
 BYTES = 2
+RATE = 3
 
 class AssemblyEvaluator(SimpleIndividualEvaluator):
-# Allow some evaluators run in parallel. Need to modify the paths for the execution.
-# Need to duplicate the original directory for this to work properly
+    # Allow some evaluators run in parallel. Need to modify the paths for the execution.
+    # Need to duplicate the original directory for this to work properly
     def __init__(self, root_path, nasm_path):
         super().__init__()
         self.nasm_path = nasm_path
         self.root_path = root_path
         self.engine = "corewars8086-5.1.0-SNAPSHOT-jar-with-dependencies.jar"
 
-       # for f in os.listdir(os.path.join(root_path, "survivors")):
-        #    os.remove(os.path.join(root_path, "survivors", f))
+    # for f in os.listdir(os.path.join(root_path, "survivors")):
+    #    os.remove(os.path.join(root_path, "survivors", f))
 
     def _write_survivor_to_file(self, tree, file_path):
         original_stdout = sys.stdout
@@ -37,13 +38,13 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
             f.write("@end:\n")
             f.seek(0, os.SEEK_END)
             while f.tell() < 512:
-                f.write("\ndb 0xC0")
+                f.write("\ndb 0x0F")
                 f.seek(0, os.SEEK_END)
         f.close()
 
     def _compile_survivor(self, file_path, individual_name, survivors_path, nasm_path):
         proc = subprocess.Popen([nasm_path, "-f bin", file_path, "-o", os.path.join(survivors_path, individual_name)],
-                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
         if "error" in str(stderr):
             print(stderr)
@@ -100,16 +101,16 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         survivors_path = os.path.join(self.root_path, "corewars8086_" + worker, "survivors")
         all_train_set = os.listdir(os.path.join(self.root_path, "corewars8086", "survivors"))
         all_train_set = list(set([survivor[:-1] for survivor in all_train_set]))
-        chosen_train_combination = random.sample(all_train_set, k=11)
+        chosen_train_combination = random.sample(all_train_set, k=1)
         if not os.path.exists(survivors_path):
             os.mkdir(survivors_path)
         for f in os.listdir(survivors_path):
             try:
-                os.remove(os.path.join(survivors_path, f)) # remove previous survivors
+                os.remove(os.path.join(survivors_path, f))  # remove previous survivors
             except Exception:
                 continue
-        [shutil.copy(os.path.join(self.root_path, "corewars8086", "survivors", survivor+i),
-                     survivors_path) for i in ["1","2"] for survivor in chosen_train_combination]
+        [shutil.copy(os.path.join(self.root_path, "corewars8086", "survivors", survivor + i),
+                     survivors_path) for i in ["1", "2"] for survivor in chosen_train_combination]
 
         if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker, self.engine)):
             shutil.copy(os.path.join(self.root_path, "corewars8086", self.engine),
@@ -133,9 +134,10 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                 os.remove(os.path.join(survivors_path, individual_name1))
             if os.path.exists(os.path.join(survivors_path, individual_name2)):
                 os.remove(os.path.join(survivors_path, individual_name2))
-            return [score1, score2, min(score1, score2), [-1, -1, -1]]
+            return [score1, score2, min(score1, score2), [-1, -1, -1, -1]]
 
-        os.system("cd {} && java -jar {}".format(os.path.join(self.root_path, "corewars8086_" + worker), self.engine)) # & cgx.bat
+        os.system("cd {} && java -jar {}".format(os.path.join(self.root_path, "corewars8086_" + worker),
+                                                 self.engine))  # & cgx.bat
         os.remove(os.path.join(survivors_path, individual_name1))
         os.remove(os.path.join(survivors_path, individual_name2))
 
@@ -144,19 +146,19 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                                     individual_name1, individual_name2)
 
         # The data should be in format of m_samples x n_features
-        #normalized_indiv_scores = normalize_data(results["indiv_data"])
-        #normalized_group_scores = normalize_data(results["group_data"])
+        # normalized_indiv_scores = normalize_data(results["indiv_data"])
+        # normalized_group_scores = normalize_data(results["group_data"])
 
         norm_indiv1 = normalize_data(results["indiv_data"], results["indiv1_index"])
-        fitness1 = fitness_calculation(norm_indiv1[SCORE], norm_indiv1[LIFETIME], norm_indiv1[BYTES])
+        fitness1 = fitness_calculation(norm_indiv1[SCORE], norm_indiv1[LIFETIME], norm_indiv1[BYTES], norm_indiv1[RATE])
         norm_indiv2 = normalize_data(results["indiv_data"], results["indiv2_index"])
-        fitness2 = fitness_calculation(norm_indiv2[SCORE], norm_indiv2[LIFETIME], norm_indiv2[BYTES])
+        fitness2 = fitness_calculation(norm_indiv2[SCORE], norm_indiv2[LIFETIME], norm_indiv2[BYTES], norm_indiv2[RATE])
         norm_group = normalize_data(results["group_data"], results["group_index"])
-        fitness = fitness_calculation(norm_group[SCORE], norm_group[LIFETIME], norm_group[BYTES])
+        fitness = fitness_calculation(norm_group[SCORE], norm_group[LIFETIME], norm_group[BYTES], norm_group[RATE])
 
-        #print("{} score: {}".format(individual_name1, fitness1))
-        #print("{} score: {}".format(individual_name2, fitness2))
-        #print("Total {} score: {}".format(individual_name2[:-1], fitness))
+        # print("{} score: {}".format(individual_name1, fitness1))
+        # print("{} score: {}".format(individual_name2, fitness2))
+        # print("Total {} score: {}".format(individual_name2[:-1], fitness))
 
         return [fitness1, fitness2, fitness, norm_group]  # how many did the survivor beat * its partial score?
 
@@ -165,11 +167,16 @@ def normalize_data(data, index):
     # normalized score by score/played_game
     score = data[index][SCORE]
     # normalize lifetime by log?
-    lifetime = data[index][LIFETIME] #math.log(data[index][LIFETIME], 2) if data[index][LIFETIME] > 0 else 0
+    lifetime = data[index][LIFETIME]  # math.log(data[index][LIFETIME], 2) if data[index][LIFETIME] > 0 else 0
     # normilize bytes by log?
-    bytes = data[index][BYTES] #math.log(data[index][BYTES], 2) if data[index][BYTES] > 0 else 0
-    return [score, lifetime, bytes]
-    #return MinMaxScaler().fit_transform(data) # [0-1] range
+    bytes = data[index][BYTES]  # math.log(data[index][BYTES], 2) if data[index][BYTES] > 0 else 0
+    rate = data[index][RATE]
+    return [score, lifetime, bytes, rate]
+    # return MinMaxScaler().fit_transform(data) # [0-1] range
 
-def fitness_calculation(score, alive_time, bytes_written):
-    return round(score + 0.05 * alive_time + 0.05 * bytes_written, 5)
+
+def fitness_calculation(score, alive_time, bytes_written, writing_rate):
+   # if bytes_written >= 5:
+    #    bytes_written = 10 # 4 is the maximum in regular commands
+    max_value = 10
+    return round(2 * score + 0.02 * alive_time + 0.03 * min(max_value, bytes_written) + 0.01 * min(max_value, writing_rate), 5)

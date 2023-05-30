@@ -1,6 +1,4 @@
 from eckity.genetic_encodings.gp.tree.tree_typed_node_individual import Tree
-from eckity.fitness.gp_fitness import GPFitness
-from eckity.individual import Individual
 import itertools
 
 
@@ -15,7 +13,7 @@ class AssemblyIndividual(Tree):
                  fitness1=None,
                  fitness2=None,
                  fitness=None):
-        super().__init__(fitness)
+        super().__init__(fitness, function_set, terminal_set, erc_range, init_depth)
         self.tree1 = Tree(function_set=function_set,
                           terminal_set=terminal_set,
                           erc_range=erc_range,

@@ -83,7 +83,6 @@ class Tree(Individual):
         self.init_depth = init_depth
         self.tree = []
         #self.id = next(self.id_iter)
-        self.partners = []
 
     def size(self):
         """
@@ -116,6 +115,8 @@ class Tree(Individual):
 
     def add_tree(self, node):
         res = self._add_tree([0], node) # [0] - t/f [1] - requested type
+        if -1 == res: # Should not happen, indicates tree is a terminal
+            return [False, None]
         if 0 == self.size() or res[0]:
             self.tree.append(node)
             return [True, None]
@@ -280,6 +281,10 @@ class Tree(Individual):
 
         return pos[0]
 
+    def random_tree_node(self):
+        index = randint(0, self.size() - 1)  # select a random node (index)
+        return index, self.tree[index].type
+
     def replace_subtree(self, subtree):
         """
         Replace the subtree starting at `index` with `subtree`
@@ -293,19 +298,23 @@ class Tree(Individual):
         Boolean - True if the types match for substitution and False otherwise
         """
 
-        for i in range(self.size() + 1):  # substitution can fail due to type mismatch
-            if i == self.size():
-                return False
-            index = randint(0, self.size() - 1)  # select a random node (index)
-            if subtree[0].type == self.tree[index].type:  # type match for replacing
-                break
+        self.replace_subtree_by_type(subtree)
+        return True
 
+    def replace_subtree_by_index(self, index, subtree):
         end_i = self._find_subtree_end([index])
         if isinstance(self.tree[end_i], list):
             print(self.tree[end_i], list)
         left_part = self.tree[:index]
         right_part = self.tree[(end_i + 1):]
         self.tree = left_part + subtree + right_part
+
+    def replace_subtree_by_type(self, subtree):
+        requested_type_nodes = [index for index, node in enumerate(self.tree) if subtree[0].type == node.type]
+        if 0 == len(requested_type_nodes):
+            return False # no such type in the tree
+        target_node_index = choice(requested_type_nodes)
+        self.replace_subtree_by_index(target_node_index, subtree)
         return True
 
     def _node_label(self, node):
@@ -345,17 +354,4 @@ class Tree(Individual):
         """
         self._show("", [0])
 
-    def add_partner(self, name, fitness):
-        for partner in self.partners:
-            if partner[0] == name:
-                self.partners.remove(partner)
-                break
-        self.partners.append((name, fitness))
-
-    def get_best_partner(self):
-        self.partners.sort(key=lambda x: x[1])
-        return self.partners[len(self.partners)-1]
-
-    def get_size_partners(self):
-        return len(self.partners)
 # end class tree
