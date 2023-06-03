@@ -37,19 +37,19 @@ class AssemblyIndividual(Tree):
     def depth(self):
         return max(self.tree1.depth(), self.tree2.depth())
 
-    def execute1(self, *args, **kwargs):
-        print("@start:")
-        self.tree1.execute(*args, **kwargs)
-        print("@end:\n")
+    def execute1(self, output, *args, **kwargs):
+        print("@start:", file=output)
+        self.tree1.execute(output, *args, **kwargs)
+        print("@end:\n", file=output)
 
-    def execute2(self, *args, **kwargs):
-        print("@start:")
-        self.tree2.execute(*args, **kwargs)
-        print("@end:\n")
+    def execute2(self, output, *args, **kwargs):
+        print("@start:", file=output)
+        self.tree2.execute(output, *args, **kwargs)
+        print("@end:\n", file=output)
 
-    def execute(self, *args, **kwargs):
-        self.execute1(*args, **kwargs)
-        self.execute2(*args, **kwargs)
+    def execute(self, output, *args, **kwargs):
+        self.execute1(output, *args, **kwargs)
+        self.execute2(output, *args, **kwargs)
 
     def random_subtree1(self):
         return self.tree1.random_subtree()

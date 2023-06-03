@@ -19,11 +19,8 @@ labels = []
 consts = ["0x"+str(2*i) for i in range(-10, 100)] + ["@start", "@end"]  # 65535, "0xcccc"
 
 
-def put_label(*args):
+def put_label(f, *args):
     lb = len(labels)
     labels.append(lb)
-    print("l{}:".format(lb))
+    print("l{}:".format(lb), file=f)
 
-
-def section(*args):
-    return

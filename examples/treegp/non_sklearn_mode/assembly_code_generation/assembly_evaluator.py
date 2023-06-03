@@ -7,7 +7,6 @@ import threading
 import numpy as np
 from eckity.evaluators.simple_individual_evaluator import SimpleIndividualEvaluator
 import shutil
-from sklearn.preprocessing import StandardScaler, PowerTransformer, MinMaxScaler
 
 # 0 - score, 1 - lifetime, 2 - written bytes
 SCORE = 0
@@ -28,19 +27,15 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
     #    os.remove(os.path.join(root_path, "survivors", f))
 
     def _write_survivor_to_file(self, tree, file_path):
-        original_stdout = sys.stdout
-        with open(file_path, 'w+') as f:
-            f.write("@start:\n")
-            sys.stdout = f
-            tree.execute()  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
+        with open(file_path,"w+") as file:
+            print("@start:", file=file)
+            tree.execute(file)  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
             # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
-            sys.stdout = original_stdout
-            f.write("@end:\n")
-            f.seek(0, os.SEEK_END)
-            while f.tell() < 512:
-                f.write("\ndb 0x0F")
-                f.seek(0, os.SEEK_END)
-        f.close()
+            print("@end:", file=file)
+            file.seek(0, os.SEEK_END)
+            while file.tell() < 510:
+                file.write("db 0x0F\n")
+
 
     def _compile_survivor(self, file_path, individual_name, survivors_path, nasm_path):
         proc = subprocess.Popen([nasm_path, "-f bin", file_path, "-o", os.path.join(survivors_path, individual_name)],
@@ -51,7 +46,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
             return -1  # fitness = -1
         return 0
 
-    def _read_scores(self, path, individual_name1, individual_name2):
+    def _read_scores(self, path, individual_name1):
         group_data = []
         indiv_data = []
         group_index = 0
@@ -142,8 +137,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         os.remove(os.path.join(survivors_path, individual_name2))
 
         # open scores.csv and get the survivors score in comparison to others
-        results = self._read_scores(os.path.join(self.root_path, "corewars8086_" + worker),
-                                    individual_name1, individual_name2)
+        results = self._read_scores(os.path.join(self.root_path, "corewars8086_" + worker), individual_name1)
 
         # The data should be in format of m_samples x n_features
         # normalized_indiv_scores = normalize_data(results["indiv_data"])
@@ -155,10 +149,6 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         fitness2 = fitness_calculation(norm_indiv2[SCORE], norm_indiv2[LIFETIME], norm_indiv2[BYTES], norm_indiv2[RATE])
         norm_group = normalize_data(results["group_data"], results["group_index"])
         fitness = fitness_calculation(norm_group[SCORE], norm_group[LIFETIME], norm_group[BYTES], norm_group[RATE])
-
-        # print("{} score: {}".format(individual_name1, fitness1))
-        # print("{} score: {}".format(individual_name2, fitness2))
-        # print("Total {} score: {}".format(individual_name2[:-1], fitness))
 
         return [fitness1, fitness2, fitness, norm_group]  # how many did the survivor beat * its partial score?
 

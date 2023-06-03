@@ -1,8 +1,6 @@
 """
 This module implements the tree class.
 """
-import collections
-
 import numpy as np
 from numbers import Number
 from random import randint, uniform, random, choice
@@ -14,8 +12,6 @@ from eckity.individual import Individual
 from eckity.genetic_encodings.gp.tree.functions import f_add, f_sub, f_mul, f_div
 
 from eckity.genetic_encodings.gp.tree.tree_node import FunctionNode, TerminalNode
-
-import itertools
 
 
 class Tree(Individual):
@@ -197,7 +193,7 @@ class Tree(Individual):
         return FunctionNode(function=lambda: None, num_of_parameters=0,
                             parameters=[], type="section")
 
-    def _execute(self, pos, **kwargs):
+    def _execute(self, output, pos, **kwargs):
         """Recursively execute the tree by traversing it in a depth-first order
            (pos is a size-1 list so as to pass "by reference" on successive recursive calls)."""
 
@@ -207,13 +203,13 @@ class Tree(Individual):
             arglist = []
             for i in range(node.num_of_descendants):
                 pos[0] += 1
-                res = self._execute(pos, **kwargs)
+                res = self._execute(output, pos, **kwargs)
                 arglist.append(res)
-            return node.function(*arglist)
+            return node.function(output, *arglist)
         else:  # terminal
             return node.value
 
-    def execute(self, *args, **kwargs):
+    def execute(self, output, *args, **kwargs):
         """
         Execute the program (tree).
         Input is a numpy array or keyword arguments (but not both).
@@ -254,7 +250,7 @@ class Tree(Individual):
             raise ValueError(
                 f'Some variable terminals were not passed to tree.execute as keyword arguments: {missing_vars}')
 
-        res = self._execute([0], **kwargs)
+        res = self._execute(output, [0], **kwargs)
         if reshape and (isinstance(res, Number) or res.shape == np.shape(0)):
             # sometimes a tree degenrates to a scalar value
             res = np.full_like(X[:, 0], res)

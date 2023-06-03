@@ -154,7 +154,7 @@ class SimpleEvolution(Algorithm):
 
         self.worst_of_gen = self.population.sub_populations[0].get_worst_individual()
 
-    def execute(self, **kwargs):
+    def execute(self, output, **kwargs):
         """
         Compute output using best evolved individual.
         Use `execute` in a non-sklearn setting.
@@ -173,7 +173,7 @@ class SimpleEvolution(Algorithm):
 
         """
         #print("The winner:")
-        self.best_of_run_.execute(**kwargs)
+        self.best_of_run_.execute(output, **kwargs)
         return self.best_of_run_  # .execute(**kwargs)
 
     def finish(self):
