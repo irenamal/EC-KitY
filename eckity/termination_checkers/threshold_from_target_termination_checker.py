@@ -22,6 +22,8 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
         self.optimal = optimal
         self.threshold = threshold
         self.higher_is_better = higher_is_better
+        self.strike = 0
+        self.prev_res = -1
 
     def should_terminate(self, population, best_individual, gen_number):
         """
@@ -44,5 +46,18 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
         bool
             True if the algorithm should terminate early, False otherwise.
         """
-        # fitness and score should be the best, which means 1. Lifetime and written bytes don't have to
-        return abs(best_individual.fitness_parts[0] - self.optimal) <= self.threshold and gen_number >= 4
+        # score should be the best, which means 1. Lifetime and written bytes don't have to
+        #return abs(best_individual.fitness_parts[0] - self.optimal) <= self.threshold and gen_number >= 4
+        if abs(best_individual.fitness_parts[0] - self.optimal) <= self.threshold:
+            if best_individual.fitness.get_pure_fitness() > self.prev_res:
+                self.prev_res = best_individual.fitness.get_pure_fitness()
+                self.strike = 0
+            else:
+                # There wasn't an improvement
+                self.strike += 1
+
+        if self.strike >= 50:
+            # If there wasn't a winning improvement for 100 generations, stop the evolution
+            return True
+
+        return False

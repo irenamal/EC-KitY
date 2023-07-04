@@ -11,7 +11,6 @@ from eckity.genetic_operators.crossovers.subtree_crossover import SubtreeCrossov
 from eckity.genetic_operators.mutations.assembly_replacing_mutation import AssemblyReplacingMutation
 from eckity.genetic_operators.mutations.assembly_duplication_mutation import AssemblyDuplicationMutation
 from eckity.genetic_operators.mutations.subtree_mutation import SubtreeMutation
-from eckity.genetic_operators.mutations.erc_mutation import ERCMutation
 from eckity.genetic_operators.selections.tournament_selection import TournamentSelection
 from eckity.statistics.best_average_worst_statistics import BestAverageWorstStatistics
 from eckity.subpopulation import Subpopulation
@@ -60,6 +59,8 @@ def main():
                        [(opcode, "op_function") for opcode in opcodes_function] + \
                        [(opcode, "op_pointer") for opcode in opcodes_pointers] + \
                        [(opcode, "op_ret") for opcode in opcode_ret] + \
+                       [(opcode, "op_double_no_const") for opcode in opcodes_double_no_cost] + \
+                       [(opcode, "op_shift") for opcode in opcodes_shift] + \
                        [("", "section")]
 
         random.shuffle(terminal_set)
@@ -69,62 +70,61 @@ def main():
                        [(section, ["label", "section", "backwards_jmp"], "section")] + \
                        [(section, ["section", "forward_jmp", "section", "label", "section"], "section")] + \
                        [(section, ["label", "section", "call_func", "backwards_jmp", "label", "section", "return"], "section")] + \
-                       [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
+                       [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
                          ["op_double", "reg", "reg", "section"], "section")] + \
-                       [(lambda dst, src, *args: print("{} {},{}".format("xchg", dst, src)),
-                         ["reg", "reg", "section"], "section")] + \
-                       [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
+                       [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
                          ["op_double", "reg", "const", "section"], "section")] + \
-                       [(lambda dst, *args, opcode=opcode: print("{} {},{}".format(opcode, dst, 1)),
-                         ["reg", "section"], "section") for opcode in ["sal", "sar"]] + \
-                       [(lambda dst, *args, opcode=opcode: print("{} {},{}".format(opcode, dst, "cl")),
-                         ["reg", "section"], "section") for opcode in ["sal", "sar"]] + \
-                       [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
+                       [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
                          ["op_double", "reg", "address", "section"], "section")] + \
-                       [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
-                         ["op_pointer", "reg", "address", "section"], "section")] + \
-                       [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
-                         ["op_pointer", "reg", "address_reg", "section"], "section")] + \
-                       [(lambda opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src)),
+                       [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
                          ["op_double", "address", "reg", "section"], "section")] + \
-                       [(lambda opcode, dst, src, *args: print("{} {} {},{}".format(opcode, "WORD", dst, src)),
+                       [(lambda f, opcode, dst, src, *args: print("{} {} {},{}".format(opcode, "WORD", dst, src), file=f),
                          ["op_double", "address", "const", "section"], "section")] + \
-                       [(lambda dst, *args, opcode=opcode: print("{} {} {},{}".format(opcode, "WORD", dst, 1)),
-                         ["address", "section"], "section") for opcode in ["sal", "sar"]] + \
-                       [(lambda dst, *args, opcode=opcode: print("{} {} {},{}".format(opcode, "WORD", dst, "cl")),
-                         ["address", "section"], "section") for opcode in ["sal", "sar"]] + \
-                       [(lambda opcode, op, *args: print("{} {}".format(opcode, op)),
+                       [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
+                         ["op_pointer", "reg", "address", "section"], "section")] + \
+                       [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
+                         ["op_pointer", "reg", "address_reg", "section"], "section")] + \
+                       [(lambda f, opcode, op, *args: print("{} {}".format(opcode, op), file=f),
                          ["op_single", "reg", "section"], "section")] + \
-                       [(lambda opcode, op, *args: print("{} {} {}".format(opcode, "WORD", op)),
+                       [(lambda f, opcode, op, *args: print("{} {} {}".format(opcode, "WORD", op), file=f),
                          ["op_single", "address", "section"], "section")] + \
-                       [(lambda opcode, op, *args: print("{} {}".format(opcode, op)),
+                       [(lambda f, opcode, op, *args: print("{} {}".format(opcode, op), file=f),
                          ["op_function", "address", "section"], "section")] + \
-                       [(lambda opcode, op, *args: print("{} {}".format(opcode, op)),
+                       [(lambda f, opcode, op, *args: print("{} {}".format(opcode, op), file=f),
                          ["op_function", "address_reg", "section"], "section")] + \
-                       [(lambda *args: print("call l{}".format(len(labels))),  ["section"], "call_func")]  + \
-                       [(lambda opcode, *args: print("{}".format(opcode)), ["op", "section"], "section")] + \
-                       [(lambda opcode, *args: print("{}".format(opcode)), ["op_special", "section"], "section")] + \
-                       [(lambda rep, opcode, *args: print("{} {}".format(rep, opcode)),
+                       [(lambda f, opcode, op, *args: print("{} {}".format(opcode, op), file=f),
+                         ["op_function", "read-only_address_reg", "section"], "section")] + \
+                       [(lambda f, *args: print("call l{}".format(len(labels)), file=f),
+                         ["section"], "call_func")] + \
+                       [(lambda f, *args: print("ret", file=f), ["section"], "return")] + \
+                       [(lambda f, opcode, *args: print("{}".format(opcode), file=f),
+                         ["op", "section"], "section")] + \
+                       [(lambda f, opcode, *args: print("{}".format(opcode), file=f),
+                         ["op_special", "section"], "section")] + \
+                       [(lambda f, rep, opcode, *args: print("{} {}".format(rep, opcode), file=f),
                          ["op_rep", "op", "section"], "section")] + \
-                       [(lambda op, *args: print("{} {}".format("push", op)), ["push_reg", "section"], "section")] + \
-                       [(lambda op, *args: print("{} {}".format("push", op)), ["reg", "section"], "section")] + \
-                       [(lambda op, *args: print("{} {}".format("pop", op)), ["pop_reg", "section"], "section")] + \
-                       [(lambda op, *args: print("{} {}".format("pop", op)), ["reg", "section"], "section")] + \
-                       [(lambda opcode, *args: print("{} l{}".format(opcode, len(labels))), ["op_jmp", "section"],
-                         "forward_jmp")]  + \
-                       [(lambda opcode, *args: print("{} l{}".format(opcode, len(labels) - 1)), ["op_jmp", "section"],
-                         "backwards_jmp")] + \
-                       [(put_label, ["section"], "label")] + \
-                       [(lambda *args: print("ret"), ["section"], "return")] + \
-                       [(lambda op, *args: print("{} {}".format("jmp", op)), ["address", "section"], "section")] + \
-                       [(lambda op, *args: print("{} {}".format("jmp", op)), ["address_reg", "section"], "section")] + \
-                       [(lambda op, *args: print("{} {}".format("jmp", op)), ["reg", "section"], "section")] + \
-                       [(lambda const, *args: print("dw {}".format(const)), ["const", "section"], "section")] + \
-                       [(lambda op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "const"],
-                         "address")] + \
-                       [(lambda *args: print("push cs\npop es"), ["section"], "section")]
-                       #[(lambda op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "reg"],
-                        # "address")] + \ [(section, ["section", "section"], "section")] + \ [(put_label, ["section"], "section")] + \
+                       [(lambda f, op, *args: print("{} {}".format("push", op), file=f),
+                         ["push_reg", "section"], "section")] + \
+                       [(lambda f, op, *args: print("{} {}".format("pop", op), file=f),
+                         ["pop_reg", "section"], "section")] + \
+                       [(lambda f, *args: put_label(f), ["section"], "label")] + \
+                       [(lambda f, opcode, *args: print("{} l{}".format(opcode, len(labels)), file=f),
+                         ["op_jmp", "section"], "forward_jmp")] + \
+                       [(lambda f, opcode, *args: print("{} l{}".format(opcode, len(labels) - 1), file=f),
+                         ["op_jmp", "section"], "backwards_jmp")] + \
+                       [(lambda f, op, *args: print("{} {}".format("jmp", op), file=f), ["reg", "section"], "section")] + \
+                       [(lambda f, op, *args: print("{} {}".format("jmp", op), file=f), ["address", "section"], "section")] + \
+                       [(lambda f, op, *args: print("{} {}".format("jmp", op), file=f), ["address_reg", "section"], "section")] + \
+                       [(lambda f, const, *args: print("dw {}".format(const), file=f), ["const", "section"], "section")] + \
+                       [(lambda f, op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "const"], "address")] + \
+                       [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
+                         ["op_double_no_const", "reg", "reg", "section"], "section")] + \
+                       [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
+                         ["op_double_no_const", "reg", "address", "section"], "section")] + \
+                       [(lambda f, opcode, dst, *args, param=param: print("{} {},{}".format(opcode, dst, param), file=f),
+                         ["op_shift", "reg", "section"], "section") for param in ["cl"]] + \
+                       [(lambda f, opcode, dst, *args, param=param: print("{} {} {},{}".format(opcode, "WORD", dst, param), file=f),
+                         ["op_shift", "address", "section"], "section") for param in ["cl"]] #, 1]]
 
         random.shuffle(function_set)
 
@@ -181,7 +181,7 @@ def main():
         max_generation=50,
         termination_checker=ThresholdFromTargetTerminationChecker(optimal=1, threshold=0.00001),
         statistics=BestAverageWorstStatistics(),
-        random_seed=10,
+        random_seed=time(),
         root_path=root_path
     )
 
@@ -201,18 +201,15 @@ def main():
                                                                                test_results[3][2], test_results[3][3]))
     print('total time:', time() - start_time)
 
-    original_stdout = sys.stdout
-    with open(os.path.join(root_path, "winners", "t_"+str(time())+"f_"+str(test_results[2])+'.asm'), 'w+') as sys.stdout:
-        algo.execute()  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
+    algo.execute(open(os.path.join(root_path, "winners", "t_"+str(time())+"f_"+str(test_results[2])+'.asm'), 'w+'))  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
                         # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
-    sys.stdout = original_stdout
 
     clear_folder(os.path.join(root_path, "survivors"))
 
     # Delete the folders created for each thread
     for file in os.listdir(root_path):
         if file.__contains__("corewars8086_"):
-            shutil.rmtree(file)
+            shutil.rmtree(os.path.join(root_path, file))
 
 
 if __name__ == '__main__':

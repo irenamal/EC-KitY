@@ -35,7 +35,6 @@ class SubtreeMutation(GeneticOperator):
             mutation_target_index, mutation_target_type = target_tree.random_tree_node()
             subtree_individual = tree_creator.create_tree_of_type(mutation_target_type, init_depth)
             target_tree.replace_subtree_by_index(mutation_target_index, subtree_individual.tree)
-            print("mutation on {} tree".format(ind.id))
 
         self.applied_individuals = individuals
         return individuals

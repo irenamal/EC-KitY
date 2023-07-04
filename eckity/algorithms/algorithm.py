@@ -268,13 +268,13 @@ class Algorithm(Operator):
                 os.mkdir(os.path.join(run_path, "gen_" + str(gen)))
             for sub_population in self.population.sub_populations:
                 for ind in sub_population.individuals:
-                    ind_path = os.path.join(run_path, "gen_" + str(gen), "s" + str(ind.id)+ "_f" + str(ind.fitness.fitness))
+                    ind_path = os.path.join(run_path, "gen_" + str(gen), "s" + str(ind.id) + "_f" + str(ind.fitness.get_pure_fitness()))
                     if not os.path.exists(ind_path):
                         os.mkdir(ind_path)
-                    ind.execute1(open(os.path.join(ind_path, "t1_f" + str(ind.tree1.fitness.fitness) + '.asm'), 'w+'))
-                    ind.execute2(open(os.path.join(ind_path, "t2_f" + str(ind.tree2.fitness.fitness) + '.asm'), 'w+'))
+                    ind.execute1(open(os.path.join(ind_path, "t1_f" + str(ind.tree1.fitness.get_pure_fitness()) + '.asm'), 'w+'))
+                    ind.execute2(open(os.path.join(ind_path, "t2_f" + str(ind.tree2.fitness.get_pure_fitness()) + '.asm'), 'w+'))
 
-                    generation_fitness_values.append(ind.fitness.fitness)
+                    generation_fitness_values.append(ind.fitness.get_pure_fitness())
                     generation_fitness_parts_values.append(ind.fitness_parts)
 
             fitness_values.append(self.calculate_statistics(generation_fitness_values))
