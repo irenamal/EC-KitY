@@ -78,7 +78,7 @@ class SimpleEvolution(Algorithm):
                  population,
                  statistics=None,
                  breeder=SimpleBreeder(),
-                 population_evaluator=SimplePopulationEvaluator(),
+                 population_evaluator=None,
                  max_generation=500,
                  events=None,
                  event_names=None,
@@ -94,6 +94,8 @@ class SimpleEvolution(Algorithm):
                  generation_num=0,
                  root_path="."):
 
+        population_evaluator = SimplePopulationEvaluator(root_path=root_path)
+
         if event_names is None:
             _event_names = ['before_eval', 'after_eval', 'before_breeding', 'after_breeding']
         else:
@@ -105,7 +107,7 @@ class SimpleEvolution(Algorithm):
         super().__init__(population, statistics=statistics, breeder=breeder, population_evaluator=population_evaluator,
                          events=events, event_names=_event_names, executor=executor, max_workers=max_workers,
                          random_generator=random_generator, random_seed=random_seed, generation_seed=generation_seed,
-                         termination_checker=termination_checker, generation_num=generation_num, root_path = root_path)
+                         termination_checker=termination_checker, generation_num=generation_num, root_path=root_path)
 
         self.termination_checker = termination_checker
         self.best_of_run_ = best_of_run_
@@ -145,7 +147,7 @@ class SimpleEvolution(Algorithm):
         self.breeder.breed(self.population)
 
         # Evaluate the entire population and get the best individual
-        self.best_of_gen = self.population_evaluator.act(self.population)
+        self.best_of_gen = self.population_evaluator.act(self.population, gen)
 
         # clone in order to the winner stay the same at test run
         if self.best_of_gen.better_than(self.best_of_run_):
@@ -172,7 +174,6 @@ class SimpleEvolution(Algorithm):
             Output as computed by the best individual of the evolutionary run.
 
         """
-        #print("The winner:")
         self.best_of_run_.execute(output, **kwargs)
         return self.best_of_run_  # .execute(**kwargs)
 

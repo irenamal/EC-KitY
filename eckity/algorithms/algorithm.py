@@ -1,7 +1,7 @@
 """
 This module implements the Algorithm class.
 """
-
+import csv
 from abc import abstractmethod
 
 import random
@@ -22,6 +22,8 @@ from eckity.subpopulation import Subpopulation
 
 SEED_MIN_VALUE = 0
 SEED_MAX_VALUE = 1000000
+STATISTICS = True
+REPS = 5
 
 
 class Algorithm(Operator):
@@ -168,10 +170,10 @@ class Algorithm(Operator):
         else:
             raise ValueError('Executor must be either "thread" or "process"')
         self._executor_type = executor
-
-
         self.final_generation_ = 0
         self.root_path = root_path
+        if STATISTICS:
+            self.statistics_path = os.path.join(self.root_path, str(time()) + "statistics.csv")
 
     @overrides
     def apply_operator(self, payload):
@@ -233,7 +235,7 @@ class Algorithm(Operator):
                 field.initialize()
 
         self.create_population()
-        self.best_of_run_ = self.population_evaluator.act(self.population)
+        self.best_of_run_ = self.population_evaluator.act(self.population, self.generation_num)
         self.publish('init')
 
     def evolve_main_loop(self):
@@ -246,8 +248,6 @@ class Algorithm(Operator):
         bytes_values = []
         rate_values = []
 
-        run_path = os.path.join(self.root_path, "survivors_" + str(time()))
-        os.mkdir(run_path)
         last_gen = 0
         for gen in range(self.max_generation):
             generation_fitness_values = []
@@ -257,23 +257,9 @@ class Algorithm(Operator):
 
             self.set_generation_seed(self.next_seed())
             self.generation_iteration(gen)
-            if self.termination_checker.should_terminate(self.population,
-                                                         self.best_of_run_,
-                                                         self.generation_num):
-                self.final_generation_ = gen
-                self.publish('after_generation')
-                break
-            self.publish('after_generation')
-            if not os.path.exists(os.path.join(run_path, "gen_" + str(gen))):
-                os.mkdir(os.path.join(run_path, "gen_" + str(gen)))
+
             for sub_population in self.population.sub_populations:
                 for ind in sub_population.individuals:
-                    ind_path = os.path.join(run_path, "gen_" + str(gen), "s" + str(ind.id) + "_f" + str(ind.fitness.get_pure_fitness()))
-                    if not os.path.exists(ind_path):
-                        os.mkdir(ind_path)
-                    ind.execute1(open(os.path.join(ind_path, "t1_f" + str(ind.tree1.fitness.get_pure_fitness()) + '.asm'), 'w+'))
-                    ind.execute2(open(os.path.join(ind_path, "t2_f" + str(ind.tree2.fitness.get_pure_fitness()) + '.asm'), 'w+'))
-
                     generation_fitness_values.append(ind.fitness.get_pure_fitness())
                     generation_fitness_parts_values.append(ind.fitness_parts)
 
@@ -284,6 +270,40 @@ class Algorithm(Operator):
             bytes_values.append(self.calculate_statistics(generation_fitness_parts_values[:, 2]))
             rate_values.append(self.calculate_statistics(generation_fitness_parts_values[:, 3]))
             last_gen = gen
+
+            if STATISTICS and 0 == self.generation_num % 5:
+                statistics = open(self.statistics_path, "a+", newline='')
+                writer = csv.writer(statistics)
+                if 0 == self.generation_num:
+                    writer.writerow(["generation", "operator", "survivor", "tree", "fitness_before"] +
+                                    ["fitness_after" + str(i) for i in range(REPS)])
+                operators = self.population.sub_populations[0].get_operators_sequence()
+                best_ind = self.best_of_run_
+                rand_ind = random.choice(self.population.sub_populations[0].individuals)
+                while best_ind == rand_ind: # not by id because when winning, there is only one
+                    rand_ind = random.choice(self.population.sub_populations[0].individuals)
+                best_ind_copies = [best_ind.deep_copy() for _ in range(REPS * len(operators))]
+                rand_ind_copies = [rand_ind.deep_copy() for _ in range(REPS * len(operators))]
+                best_before_fitness = best_ind.get_pure_fitness()
+                rand_before_fitness = rand_ind.get_pure_fitness()
+                for num, operator in enumerate(operators):
+                    best_after_fitness = []
+                    rand_after_fitness = []
+                    for i in range(REPS):
+                        index = num * REPS + i
+                        if 1 == num:
+                            # replacing mutation requires 2 individuals
+                            operator.apply_operator_certainly([best_ind_copies[index], rand_ind_copies[index]])
+                        else:
+                            operator.apply_operator_certainly([best_ind_copies[index]])
+                            operator.apply_operator_certainly([rand_ind_copies[index]])
+                        best_after_fitness.append(self.population.sub_populations[0].evaluator._evaluate_individual(best_ind_copies[index])[2])
+                        rand_after_fitness.append(self.population.sub_populations[0].evaluator._evaluate_individual(rand_ind_copies[index])[2])
+                    writer.writerow([gen, str(operator).split('.')[3], best_ind.id, 0, best_before_fitness] + best_after_fitness)
+                    writer.writerow([gen, str(operator).split('.')[3], rand_ind.id, 0, rand_before_fitness] + rand_after_fitness)
+                best_ind_copies.clear()
+                rand_ind_copies.clear()
+                statistics.close()
 
             if self.termination_checker.should_terminate(self.population,
                                                          self.best_of_run_,
@@ -321,7 +341,7 @@ class Algorithm(Operator):
         self.plot_graph(plot_rate, range(0, last_gen + 1), rate_values[:, 0], rate_values[:, 1], rate_values[:, 2], "Writing rate")
 
         plt.tight_layout()
-        plt.savefig(os.path.join(run_path, "fitness_to_gen.png"))
+        plt.savefig(os.path.join(self.root_path, str(time()) + "_fitness_to_gen.png"))
         plt.show()
 
         self.executor.shutdown()

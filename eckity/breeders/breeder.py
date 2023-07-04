@@ -38,6 +38,6 @@ class Breeder(Operator):
 		pass
 
 	@overrides
-	def apply_operator(self, payload):
+	def apply_operator(self, payload, gen=0):
 		population: Population = payload
-		self.apply_breed(population)
+		self.apply_breed(population, gen)

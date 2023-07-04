@@ -9,13 +9,15 @@ class SimpleBreeder(Breeder):
         self.selected_individuals = []  # TODO why do we need this field? what about applied_individuals?
         self.best_of_run = []  # TODO this field isn't used
 
-    def apply_breed(self, population):
+    def apply_breed(self, population, gen=0):
         """
         Apply elitism, selection method and the sub-population's operator sequence on each sub-population.
         In simple case, the operator sequence is applied on the one and only sub-population.
 
         Parameters
         ----------
+        gen:
+            current generation
         population:
             Population of sub-populations of individuals. The operators will be applied on those individuals.
 
@@ -36,14 +38,14 @@ class SimpleBreeder(Breeder):
 
             # then runs all operators on next_gen
             nextgen_population = self._apply_operators(subpopulation.get_operators_sequence(),
-                                                       self.selected_individuals)
+                                                       self.selected_individuals, gen)
             # TODO assert simple operators the has %0 with pop size
             for indiv in nextgen_population:
                 indiv.unset_evaluation()
 
             subpopulation.individuals = nextgen_population
 
-    def _apply_operators(self, operator_seq, individuals_to_apply_on):
+    def _apply_operators(self, operator_seq, individuals_to_apply_on, gen):
         """
         Apply a given operator sequence on a given list of individuals.
         The operators are done sequentially.
@@ -63,7 +65,7 @@ class SimpleBreeder(Breeder):
         for operator in operator_seq:
             operator_arity = operator.get_operator_arity()
             for i in range(0, len(individuals_to_apply_on), operator_arity):
-                op_res = operator.apply_operator(individuals_to_apply_on[i:i + operator_arity])
+                op_res = operator.apply_operator(individuals_to_apply_on[i:i + operator_arity], gen)
                 individuals_to_apply_on[i:i + operator_arity] = op_res
         return individuals_to_apply_on
 

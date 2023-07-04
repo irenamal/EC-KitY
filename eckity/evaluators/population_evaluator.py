@@ -8,7 +8,7 @@ class PopulationEvaluator(Operator):
 		super().__init__()
 		self.executor = None
 
-	def _evaluate(self, population):
+	def _evaluate(self, population, gen=0):
 		"""
 		Evaluate the fitness score of the entire population
 
@@ -24,8 +24,8 @@ class PopulationEvaluator(Operator):
 		"""
 		self.applied_individuals = population
 
-	def apply_operator(self, payload):
-		return self._evaluate(payload)
+	def apply_operator(self, payload, gen=0):
+		return self._evaluate(payload, gen)
 
 	def set_executor(self, executor: Executor):
 		self.executor = executor

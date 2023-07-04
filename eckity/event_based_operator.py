@@ -20,13 +20,15 @@ class Operator(BeforeAfterPublisher):
     def initialize(self):
         pass
 
-    def act(self, payload=None):
+    def act(self, payload=None, gen=0):
         """
         Applies the subclass-specific operator on the given payload,
         and publishing events before and after the operator execution
 
         Parameters
         ----------
+        gen:
+            current generation
         payload:
             operands to apply the operator on
 
@@ -34,7 +36,7 @@ class Operator(BeforeAfterPublisher):
         -------
         the return value of the operator implemented in the sub-class
         """
-        return self.act_and_publish_before_after(lambda: self.apply_operator(payload))
+        return self.act_and_publish_before_after(lambda: self.apply_operator(payload, gen))
 
     def get_operator_arity(self):
         """

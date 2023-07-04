@@ -46,7 +46,7 @@ def main():
     start_time = time()
     if TYPED:
         terminal_set = [(reg, "reg") for reg in general_registers] + \
-                       [(reg, "address_reg") for reg in addressing_registers] + \
+                       [(reg, "address") for reg in addressing_registers] + \
                        [(const, "const") for const in consts] + \
                        [(reg, "push_reg") for reg in push_registers] + \
                        [(reg, "pop_reg") for reg in pop_registers] + \
@@ -82,18 +82,12 @@ def main():
                          ["op_double", "address", "const", "section"], "section")] + \
                        [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
                          ["op_pointer", "reg", "address", "section"], "section")] + \
-                       [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
-                         ["op_pointer", "reg", "address_reg", "section"], "section")] + \
                        [(lambda f, opcode, op, *args: print("{} {}".format(opcode, op), file=f),
                          ["op_single", "reg", "section"], "section")] + \
                        [(lambda f, opcode, op, *args: print("{} {} {}".format(opcode, "WORD", op), file=f),
                          ["op_single", "address", "section"], "section")] + \
                        [(lambda f, opcode, op, *args: print("{} {}".format(opcode, op), file=f),
                          ["op_function", "address", "section"], "section")] + \
-                       [(lambda f, opcode, op, *args: print("{} {}".format(opcode, op), file=f),
-                         ["op_function", "address_reg", "section"], "section")] + \
-                       [(lambda f, opcode, op, *args: print("{} {}".format(opcode, op), file=f),
-                         ["op_function", "read-only_address_reg", "section"], "section")] + \
                        [(lambda f, *args: print("call l{}".format(len(labels)), file=f),
                          ["section"], "call_func")] + \
                        [(lambda f, *args: print("ret", file=f), ["section"], "return")] + \
@@ -114,9 +108,8 @@ def main():
                          ["op_jmp", "section"], "backwards_jmp")] + \
                        [(lambda f, op, *args: print("{} {}".format("jmp", op), file=f), ["reg", "section"], "section")] + \
                        [(lambda f, op, *args: print("{} {}".format("jmp", op), file=f), ["address", "section"], "section")] + \
-                       [(lambda f, op, *args: print("{} {}".format("jmp", op), file=f), ["address_reg", "section"], "section")] + \
                        [(lambda f, const, *args: print("dw {}".format(const), file=f), ["const", "section"], "section")] + \
-                       [(lambda f, op, const, *args: "{} + {}]".format(op[:-1], const), ["address_reg", "const"], "address")] + \
+                       [(lambda f, op, const, *args: "{} + {}]".format(op[:-1], const), ["address", "const"], "address")] + \
                        [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
                          ["op_double_no_const", "reg", "reg", "section"], "section")] + \
                        [(lambda f, opcode, dst, src, *args: print("{} {},{}".format(opcode, dst, src), file=f),
@@ -124,7 +117,7 @@ def main():
                        [(lambda f, opcode, dst, *args, param=param: print("{} {},{}".format(opcode, dst, param), file=f),
                          ["op_shift", "reg", "section"], "section") for param in ["cl"]] + \
                        [(lambda f, opcode, dst, *args, param=param: print("{} {} {},{}".format(opcode, "WORD", dst, param), file=f),
-                         ["op_shift", "address", "section"], "section") for param in ["cl"]] #, 1]]
+                         ["op_shift", "address", "section"], "section") for param in ["cl"]]
 
         random.shuffle(function_set)
 
@@ -153,7 +146,7 @@ def main():
 
     # Initialize SimpleEvolution instance
     algo = SimpleEvolution(
-        Subpopulation(creators=GrowCreator(init_depth=(1, 20),
+        Subpopulation(creators=GrowCreator(init_depth=(1, 22),
                                            terminal_set=terminal_set,
                                            function_set=function_set,
                                            bloat_weight=0.00001),
@@ -196,9 +189,9 @@ def main():
     test_results = algo.population.sub_populations[0].evaluator._evaluate_individual(algo.best_of_run_copy_)
     print("Total fitness: {}\nTree1 fitness: {}\nTree2 fitness: {}\n"
           "Score:{}, Lifetime: {}, Bytes written: {}, Writing rate:{}".format(test_results[2], test_results[0],
-                                                                               test_results[1],
-                                                                               test_results[3][0], test_results[3][1],
-                                                                               test_results[3][2], test_results[3][3]))
+                                                                              test_results[1],
+                                                                              test_results[3][0], test_results[3][1],
+                                                                              test_results[3][2], test_results[3][3]))
     print('total time:', time() - start_time)
 
     algo.execute(open(os.path.join(root_path, "winners", "t_"+str(time())+"f_"+str(test_results[2])+'.asm'), 'w+'))  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",

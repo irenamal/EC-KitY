@@ -1,3 +1,4 @@
+import copy
 from eckity.genetic_encodings.gp.tree.tree_typed_node_individual import Tree
 import itertools
 
@@ -79,5 +80,11 @@ class AssemblyIndividual(Tree):
         self.tree1.fitness.set_not_evaluated()
         self.tree2.fitness.set_not_evaluated()
         self.fitness.set_not_evaluated()
+
+    def deep_copy(self):
+        indiv_copy = copy.deepcopy(self)
+        indiv_copy.set_evaluation(self.tree1.fitness.get_pure_fitness(), self.tree2.fitness.get_pure_fitness(),
+                                  self.fitness.get_pure_fitness(), self.fitness_parts)
+        return indiv_copy
 
 

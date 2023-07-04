@@ -9,7 +9,7 @@ class GeneticOperator(Operator):
         super().__init__(events=events, arity=arity)
         self.probability = probability
 
-    def apply_operator(self, individuals):
+    def apply_operator(self, individuals, gen=0):
         if uniform(0, 1) <= self.probability:
             for individual in individuals:
                 individual.set_fitness_not_evaluated()
@@ -18,6 +18,9 @@ class GeneticOperator(Operator):
                 ind.applied_operators.append(type(self).__name__)
             return op_res
         return individuals
+    
+    def apply_operator_certainly(self, individuals):
+        return self.apply(individuals)
 
     @abstractmethod
     def apply(self, individuals):
