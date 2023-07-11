@@ -56,7 +56,7 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
                 # There wasn't an improvement
                 self.strike += 1
 
-        if self.strike >= 50:
+        if self.strike >= 100:
             # If there wasn't a winning improvement for 100 generations, stop the evolution
             return True
 

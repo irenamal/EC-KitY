@@ -1,7 +1,6 @@
 import csv
 import os
 import random
-import sys
 import subprocess
 import threading
 import numpy as np
@@ -27,7 +26,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
     #    os.remove(os.path.join(root_path, "survivors", f))
 
     def _write_survivor_to_file(self, tree, file_path):
-        with open(file_path,"w+") as file:
+        with open(file_path, "w+") as file:
             print("@start:", file=file)
             tree.execute(file)  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
             # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
@@ -35,6 +34,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
             file.seek(0, os.SEEK_END)
             while file.tell() < 510:
                 file.write("db 0x0F\n")
+        file.close()
 
 
     def _compile_survivor(self, file_path, individual_name, survivors_path, nasm_path):
@@ -67,6 +67,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                     continue
                 if flag_ind:
                     indiv_data.append(line[1:])
+        scores.close()
 
         return {"group_data": group_data, "indiv_data": indiv_data,
                 "group_index": group_index, "indiv1_index": group_index, "indiv2_index": group_index + 1}
@@ -131,8 +132,13 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                 os.remove(os.path.join(survivors_path, individual_name2))
             return [score1, score2, min(score1, score2), [-1, -1, -1, -1]]
 
-        os.system("cd {} && java -jar {}".format(os.path.join(self.root_path, "corewars8086_" + worker),
-                                                 self.engine))  # & cgx.bat
+        proc = subprocess.Popen(["java", "-jar", os.path.join(self.root_path, "corewars8086_" + worker, self.engine),
+                                survivors_path, os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv")],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = proc.communicate()
+        if "b''" != str(stderr):
+            print(stderr)
+
         os.remove(os.path.join(survivors_path, individual_name1))
         os.remove(os.path.join(survivors_path, individual_name2))
 

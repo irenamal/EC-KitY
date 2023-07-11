@@ -4,6 +4,11 @@ from time import time
 import sys
 import os
 
+TYPED = True
+WINDOWS = False
+if not WINDOWS:
+    sys.path.extend(['/cs_storage/irinamal/thesis/EC-KitY/'])
+
 from eckity.algorithms.simple_evolution import SimpleEvolution
 from eckity.breeders.simple_breeder import SimpleBreeder
 from eckity.creators.gp_creators.grow_typed import GrowCreator
@@ -17,9 +22,6 @@ from eckity.subpopulation import Subpopulation
 from eckity.termination_checkers.threshold_from_target_termination_checker import ThresholdFromTargetTerminationChecker
 from examples.treegp.non_sklearn_mode.assembly_code_generation.assembly_evaluator import AssemblyEvaluator
 from examples.treegp.non_sklearn_mode.assembly_code_generation.assembly_parameters import *
-
-TYPED = True
-WINDOWS = False
 
 def clear_folder(path):
     folder = os.listdir(path)

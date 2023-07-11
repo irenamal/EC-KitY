@@ -50,8 +50,12 @@ class SimplePopulationEvaluator(PopulationEvaluator):
                                         "_wb" + str(fitness_scores[3][2]) + "_wr" + str(fitness_scores[3][3]))
                 if not os.path.exists(ind_path):
                     os.mkdir(ind_path)
-                ind.execute1(open(os.path.join(ind_path, "t1_f" + str(fitness_scores[0]) + '.asm'), 'w+'))
-                ind.execute2(open(os.path.join(ind_path, "t2_f" + str(fitness_scores[1]) + '.asm'), 'w+'))
+                file1 = open(os.path.join(ind_path, "t1_f" + str(fitness_scores[0]) + '.asm'), 'w+')
+                ind.execute1(file1)
+                file1.close()
+                file2 = open(os.path.join(ind_path, "t2_f" + str(fitness_scores[1]) + '.asm'), 'w+')
+                ind.execute2(file2)
+                file2.close()
 
                 summary = open(self.summary, "a+", newline='')
                 writer = csv.writer(summary)
