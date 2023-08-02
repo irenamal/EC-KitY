@@ -1,8 +1,9 @@
 import csv
 import os
-import random
 import subprocess
 import threading
+import time
+
 import numpy as np
 from eckity.evaluators.simple_individual_evaluator import SimpleIndividualEvaluator
 import shutil
@@ -49,28 +50,27 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
     def _read_scores(self, path, individual_name1):
         group_data = []
         indiv_data = []
-        group_index = 0
 
-        with open(os.path.join(path, "scores.csv")) as scores:
+        with open(os.path.join(path, "scores.csv"), 'r') as scores:
             info = csv.reader(scores)
             flag_ind = False
             for index, line in enumerate(info):
                 if line.__contains__("Groups:"):
                     continue
                 if not flag_ind and not line.__contains__("Warriors:") and line != []:
-                    group_data.append(line[1:])
                     if line[0] == individual_name1[:-1]:
-                        group_index = index - 1
+                        group_data.append(line[1:])
                     continue
                 if line.__contains__("Warriors:"):
                     flag_ind = True
                     continue
                 if flag_ind:
-                    indiv_data.append(line[1:])
+                    if line[0][:-1] == individual_name1[:-1]:
+                        indiv_data.append(line[1:])
         scores.close()
 
         return {"group_data": group_data, "indiv_data": indiv_data,
-                "group_index": group_index, "indiv1_index": group_index, "indiv2_index": group_index + 1}
+                "group_index": 0, "indiv1_index": 0, "indiv2_index": 1}
 
     def _evaluate_individual(self, individual):
         """
@@ -97,66 +97,85 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         survivors_path = os.path.join(self.root_path, "corewars8086_" + worker, "survivors")
         all_train_set = os.listdir(os.path.join(self.root_path, "corewars8086", "survivors"))
         all_train_set = list(set([survivor[:-1] for survivor in all_train_set]))
-        chosen_train_combination = random.sample(all_train_set, k=1)
         if not os.path.exists(survivors_path):
             os.mkdir(survivors_path)
-        for f in os.listdir(survivors_path):
-            try:
-                os.remove(os.path.join(survivors_path, f))  # remove previous survivors
-            except Exception:
-                continue
-        [shutil.copy(os.path.join(self.root_path, "corewars8086", "survivors", survivor + i),
-                     survivors_path) for i in ["1", "2"] for survivor in chosen_train_combination]
+        fitness_array = []
+        for opponent in all_train_set:
+            chosen_train_combination = [opponent]  # random.sample(all_train_set, k=1)
+            for f in os.listdir(survivors_path):
+                try:
+                    os.remove(os.path.join(survivors_path, f))  # remove previous survivors
+                except Exception:
+                    continue
+            [shutil.copy(os.path.join(self.root_path, "corewars8086", "survivors", survivor + i),
+                         survivors_path) for i in ["1", "2"] for survivor in chosen_train_combination]
 
-        if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker, self.engine)):
-            shutil.copy(os.path.join(self.root_path, "corewars8086", self.engine),
-                        os.path.join(self.root_path, "corewars8086_" + worker, self.engine))
-        nasm_path = os.path.join(self.root_path, "corewars8086_" + worker, "nasm")
-        if not os.path.exists(nasm_path):
-            shutil.copy(self.nasm_path, os.path.join(self.root_path, "corewars8086_" + worker, "nasm"))
+            if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker, self.engine)):
+                shutil.copy(os.path.join(self.root_path, "corewars8086", self.engine),
+                            os.path.join(self.root_path, "corewars8086_" + worker, self.engine))
+            nasm_path = os.path.join(self.root_path, "corewars8086_" + worker, "nasm")
+            if not os.path.exists(nasm_path):
+                shutil.copy(self.nasm_path, os.path.join(self.root_path, "corewars8086_" + worker, "nasm"))
 
-        individual_name1 = str(individual.id) + "try1"
-        individual_name2 = str(individual.id) + "try2"
-        file_path1 = os.path.join(self.root_path, "corewars8086_" + worker, 'survivors', individual_name1 + '.asm')
-        file_path2 = os.path.join(self.root_path, "corewars8086_" + worker, 'survivors', individual_name2 + '.asm')
-        self._write_survivor_to_file(individual.tree1, file_path1)
-        self._write_survivor_to_file(individual.tree2, file_path2)
+            individual_name1 = str(individual.id) + "try1"
+            individual_name2 = str(individual.id) + "try2"
+            file_path1 = os.path.join(self.root_path, "corewars8086_" + worker, 'survivors', individual_name1 + '.asm')
+            file_path2 = os.path.join(self.root_path, "corewars8086_" + worker, 'survivors', individual_name2 + '.asm')
+            self._write_survivor_to_file(individual.tree1, file_path1)
+            self._write_survivor_to_file(individual.tree2, file_path2)
 
-        score1 = self._compile_survivor(file_path1, individual_name1, survivors_path, nasm_path)
-        score2 = self._compile_survivor(file_path2, individual_name2, survivors_path, nasm_path)
+            score1 = self._compile_survivor(file_path1, individual_name1, survivors_path, nasm_path)
+            score2 = self._compile_survivor(file_path2, individual_name2, survivors_path, nasm_path)
 
-        if score1 == -1 or score2 == -1:  # one of the trees in invalid
-            if os.path.exists(os.path.join(survivors_path, individual_name1)):
-                os.remove(os.path.join(survivors_path, individual_name1))
-            if os.path.exists(os.path.join(survivors_path, individual_name2)):
-                os.remove(os.path.join(survivors_path, individual_name2))
-            return [score1, score2, min(score1, score2), [-1, -1, -1, -1]]
+            if score1 == -1 or score2 == -1:  # one of the trees in invalid
+                if os.path.exists(os.path.join(survivors_path, individual_name1)):
+                    os.remove(os.path.join(survivors_path, individual_name1))
+                if os.path.exists(os.path.join(survivors_path, individual_name2)):
+                    os.remove(os.path.join(survivors_path, individual_name2))
+                return [0, 0, 0, [0, 0, 0, 0]]
 
-        proc = subprocess.Popen(["java", "-jar", os.path.join(self.root_path, "corewars8086_" + worker, self.engine),
-                                survivors_path, os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv")],
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = proc.communicate()
-        if "b''" != str(stderr):
-            print(stderr)
+            if os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv")):
+                os.remove(os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv"))
+            proc = subprocess.Popen(["java", "-jar", os.path.join(self.root_path, "corewars8086_" + worker, self.engine),
+                                    survivors_path, os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv")],
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout, stderr = proc.communicate()
+            if "b''" != str(stderr):
+                print(stderr)
 
-        os.remove(os.path.join(survivors_path, individual_name1))
-        os.remove(os.path.join(survivors_path, individual_name2))
+            os.remove(os.path.join(survivors_path, individual_name1))
+            os.remove(os.path.join(survivors_path, individual_name2))
 
-        # open scores.csv and get the survivors score in comparison to others
-        results = self._read_scores(os.path.join(self.root_path, "corewars8086_" + worker), individual_name1)
+            # open scores.csv and get the survivors score in comparison to others
+            for i in range(3):
+                if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv")):
+                    time.sleep(5)
+                else:
+                    break
+            if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv")):
+                return [0, 0, 0, [0, 0, 0, 0]]
+            results = self._read_scores(os.path.join(self.root_path, "corewars8086_" + worker), individual_name1)
 
-        # The data should be in format of m_samples x n_features
-        # normalized_indiv_scores = normalize_data(results["indiv_data"])
-        # normalized_group_scores = normalize_data(results["group_data"])
+            norm_indiv1 = normalize_data(results["indiv_data"], results["indiv1_index"])
+            fitness1 = fitness_calculation(norm_indiv1[SCORE], norm_indiv1[LIFETIME], norm_indiv1[BYTES], norm_indiv1[RATE])
+            norm_indiv2 = normalize_data(results["indiv_data"], results["indiv2_index"])
+            fitness2 = fitness_calculation(norm_indiv2[SCORE], norm_indiv2[LIFETIME], norm_indiv2[BYTES], norm_indiv2[RATE])
+            norm_group = normalize_data(results["group_data"], results["group_index"])
+            fitness = fitness_calculation(norm_group[SCORE], norm_group[LIFETIME], norm_group[BYTES], norm_group[RATE])
 
-        norm_indiv1 = normalize_data(results["indiv_data"], results["indiv1_index"])
-        fitness1 = fitness_calculation(norm_indiv1[SCORE], norm_indiv1[LIFETIME], norm_indiv1[BYTES], norm_indiv1[RATE])
-        norm_indiv2 = normalize_data(results["indiv_data"], results["indiv2_index"])
-        fitness2 = fitness_calculation(norm_indiv2[SCORE], norm_indiv2[LIFETIME], norm_indiv2[BYTES], norm_indiv2[RATE])
-        norm_group = normalize_data(results["group_data"], results["group_index"])
-        fitness = fitness_calculation(norm_group[SCORE], norm_group[LIFETIME], norm_group[BYTES], norm_group[RATE])
+            fitness_array.append([fitness1, fitness2, fitness, norm_group])   # how many did the survivor beat * its partial score?
 
-        return [fitness1, fitness2, fitness, norm_group]  # how many did the survivor beat * its partial score?
+        # calculate the average fitness between all the games against each opponent
+        first_tree = sum(fit[0] for fit in fitness_array) / len(fitness_array)
+        second_tree = sum(fit[1] for fit in fitness_array) / len(fitness_array)
+        group = sum(fit[2] for fit in fitness_array) / len(fitness_array)
+        score = sum(fit[3][SCORE] for fit in fitness_array) / len(fitness_array)
+        life = sum(fit[3][LIFETIME] for fit in fitness_array) / len(fitness_array)
+        bytes = sum(fit[3][BYTES] for fit in fitness_array) / len(fitness_array)
+        rate = sum(fit[3][RATE] for fit in fitness_array) / len(fitness_array)
+
+        return [first_tree, second_tree, group, [score, life, bytes, rate]]
+
 
 def normalize_data(data, index):
     data = np.array(data).astype(float)

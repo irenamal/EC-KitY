@@ -16,7 +16,7 @@ addressing_registers = ["[bx]", "[si]", "[di]", "[bp]"]
 pop_registers = general_registers + ["WORD " + add_reg for add_reg in addressing_registers] #+ ["ds", "es", "ss"]
 push_registers = pop_registers + ["cs", "ds", "es", "ss"]
 labels = []
-consts = ["0x"+str(2*i) for i in range(-10, 130)] + ["@start", "@end", "65535", "0xcccc"]
+consts = ["0x"+str(2*i) for i in range(-10, 133)] + ["@start", "@end", "65535", "0xcccc"]
 
 
 def put_label(f, *args):

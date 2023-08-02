@@ -53,10 +53,13 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
                 self.prev_res = best_individual.fitness.get_pure_fitness()
                 self.strike = 0
             else:
-                # There wasn't an improvement
+                # There was a win but wasn't an improvement, but we still win
                 self.strike += 1
+        else:
+            # we lost - we need winning with no improvement strike
+            self.strike = 0
 
-        if self.strike >= 100:
+        if self.strike >= 200:
             # If there wasn't a winning improvement for 100 generations, stop the evolution
             return True
 

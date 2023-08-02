@@ -22,7 +22,7 @@ from eckity.subpopulation import Subpopulation
 
 SEED_MIN_VALUE = 0
 SEED_MAX_VALUE = 1000000
-STATISTICS = True
+STATISTICS = False
 REPS = 100
 
 
@@ -275,8 +275,8 @@ class Algorithm(Operator):
                 statistics = open(self.statistics_path, "a+", newline='')
                 writer = csv.writer(statistics)
                 if 0 == self.generation_num:
-                    writer.writerow(["generation", "operator", "survivor", "tree", "fitness_before"] +
-                                    ["fitness_after" + str(i) for i in range(REPS)] + ["effect"])
+                    writer.writerow(["generation", "operator", "survivor", "fitness_before"] +
+                                    ["fitness_after" + str(i) for i in range(REPS)] + ["chance_to_improve"])
                 operators = self.population.sub_populations[0].get_operators_sequence()
                 best_ind = self.best_of_run_
                 rand_ind = random.choice(self.population.sub_populations[0].individuals)
@@ -296,8 +296,7 @@ class Algorithm(Operator):
                             operator.apply_operator_certainly([best_ind_copies[index], rand_ind_copies[index]])
                         else:
                             operator.apply_operator_certainly([best_ind_copies[index]])
-                            operator.apply_operator_certainly([rand_ind_copies[index]])                        #best_after_fitness.append(self.population.sub_populations[0].evaluator._evaluate_individual(best_ind_copies[index])[2])
-                        #rand_after_fitness.append(self.population.sub_populations[0].evaluator._evaluate_individual(rand_ind_copies[index])[2])
+                            operator.apply_operator_certainly([rand_ind_copies[index]])
 
                     eval_results_best = self.executor.map(self.population.sub_populations[0].evaluator._evaluate_individual,
                                                           best_ind_copies[num * REPS:(num + 1) * REPS])
@@ -308,11 +307,13 @@ class Algorithm(Operator):
                     for ind, fitness_scores in zip(rand_ind_copies[num * REPS:(num + 1) * REPS], eval_results_rand):
                         rand_after_fitness.append(fitness_scores[2])
 
-                    best_after_fitness.append(self.calc_effect(best_after_fitness, best_before_fitness))
-                    rand_after_fitness.append(self.calc_effect(rand_after_fitness, rand_before_fitness))
-                    writer.writerow([gen, str(operator).split('.')[3], "best " + str(best_ind.id), 0, best_before_fitness] +
+                    higher_fitness = sum(1 for f in best_after_fitness if f > best_before_fitness)
+                    best_after_fitness.append(higher_fitness / REPS)
+                    higher_fitness = sum(1 for f in rand_after_fitness if f > rand_before_fitness)
+                    rand_after_fitness.append(higher_fitness / REPS)
+                    writer.writerow([gen, str(operator).split('.')[3], "best " + str(best_ind.id), best_before_fitness] +
                                     best_after_fitness)
-                    writer.writerow([gen, str(operator).split('.')[3], "random " + str(rand_ind.id), 0, rand_before_fitness] +
+                    writer.writerow([gen, str(operator).split('.')[3], "random " + str(rand_ind.id), rand_before_fitness] +
                                     rand_after_fitness)
                 best_ind_copies.clear()
                 rand_ind_copies.clear()
@@ -363,14 +364,6 @@ class Algorithm(Operator):
 		for subpopulation in population.sub_populations:
 			for ind in subpopulation.individuals:
 				ind.gen = gen@staticmethod
-    def calc_effect(fitness_list, fitness):
-        avg = sum(fitness_list) / len(fitness_list)
-        if avg > fitness:
-            return "+"
-        elif avg < fitness:
-            return "-"
-        else:
-            return "="
 
     @abstractmethod
     def generation_iteration(self, gen):

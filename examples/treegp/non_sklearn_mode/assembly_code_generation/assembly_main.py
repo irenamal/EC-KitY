@@ -163,8 +163,8 @@ def main():
                       operators_sequence=[
                           AssemblyDuplicationMutation(probability=0.2, arity=1),  # first because it depends on the fitness
                           AssemblyReplacingMutation(probability=0.2, arity=2), # swap between inner trees of 2 individuals
-                          SubtreeCrossover(probability=0.8, arity=2), # crossover inner trees of 2 individuals, can be more
-                          SubtreeMutation(probability=0.4, arity=1), # mutate a subtree of one inner tree of 1 individual
+                          SubtreeCrossover(probability=0.3, arity=2), # crossover inner trees of 2 individuals, can be more
+                          SubtreeMutation(probability=0.7, arity=1), # mutate a subtree of one inner tree of 1 individual
                       ],
                       selection_methods=[
                           # (selection method, selection probability) tuple
