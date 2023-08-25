@@ -11,11 +11,15 @@ from eckity.individual import Individual
 
 
 class SimplePopulationEvaluator(PopulationEvaluator):
-    def __init__(self, root_path="."):
+    def __init__(self, root_path=".", executor_method='map'):
         super().__init__()
         self.save_path = os.path.join(root_path, "survivors_" + str(time()))
         os.mkdir(self.save_path)
         self.summary = os.path.join(self.save_path, "summary.csv")
+        self.root_path = root_path
+        if executor_method not in ['map', 'submit']:
+            raise ValueError(f'executor_method must be either "map" or "submit", got {executor_method}')
+        self.executor_method = executor_method
 
     @overrides
     def _evaluate(self, population, gen=0):
@@ -36,13 +40,26 @@ class SimplePopulationEvaluator(PopulationEvaluator):
         for sub_population in population.sub_populations:
             sub_population = population.sub_populations[0]
             sp_eval: IndividualEvaluator = sub_population.evaluator
-            eval_results = self.executor.map(sp_eval._evaluate_individual, sub_population.individuals)
+            #all_train_set = os.listdir(os.path.join(self.root_path, "corewars8086", "survivors"))
+            #opponents = list(set([survivor[:-1] for survivor in all_train_set]))
+
+            if self.executor_method == 'submit':
+                eval_futures = [self.executor.submit(sp_eval.evaluate, ind, sub_population.individuals)
+                                for ind in sub_population.individuals]
+                eval_results = [future.result() for future in eval_futures]
+            elif self.executor_method == 'map':
+                #eval_results = self.executor.map(sp_eval.calculate_avg_fitness, sub_population.individuals)
+                eval_results = self.executor.map(sp_eval.evaluate_individual, sub_population.individuals)
+                # eval_results = self.executor.map(sp_eval.evaluate_individual, sub_population.individuals * len(opponents),
+            #                                                  opponents * len(sub_population.individuals))
+
             # here all the individuals are evaluated, so if we want to save them all and not only the finals, should be here
             gen_path = os.path.join(self.save_path, "gen" + str(gen))
             if not os.path.exists(gen_path):
                 os.mkdir(gen_path)
 
             for ind, fitness_scores in zip(sub_population.individuals, eval_results):
+                #fitness_scores = avg_fitness_dict[ind.id]
                 ind.set_evaluation(fitness_scores[0], fitness_scores[1], fitness_scores[2], fitness_scores[3])
 
                 ind_path = os.path.join(gen_path, "s" + str(ind.id) + "_f" + str(fitness_scores[2]) +

@@ -25,7 +25,7 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
         self.strike = 0
         self.prev_res = -1
 
-    def should_terminate(self, population, best_individual, gen_number):
+    def should_terminate(self, population, best_individual, gen_number, max=0, avg=0):
         """
         Determines if the currently best fitness is close enough to the target fitness.
         If so, recommends the algorithm to terminate early.
@@ -59,7 +59,7 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
             # we lost - we need winning with no improvement strike
             self.strike = 0
 
-        if self.strike >= 200:
+        if self.strike >= 200 and abs(max - avg) < 0.25:
             # If there wasn't a winning improvement for 100 generations, stop the evolution
             return True
 

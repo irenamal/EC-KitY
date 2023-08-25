@@ -181,7 +181,7 @@ class SimpleEvolution(Algorithm):
         """
         Finish the evolutionary run by showing the best individual and printing the best fitness
         """
-        # todo should move to finisher
+        super().finish()
         self.best_of_run_.show()
         print("The best fitness: " + str(self.best_of_run_.get_pure_fitness()))
 
@@ -198,8 +198,8 @@ class SimpleEvolution(Algorithm):
                 "max_generation": self.max_generation,
                 "events": self.events,
                 "max_workers": self.max_workers,
-            "generation_num": self.generation_num,
-			}
+                "generation_num": self.generation_num
+            }
 
         # default case
         return {

@@ -197,8 +197,8 @@ class Algorithm(Operator):
         else:
             self.evolve_main_loop()
 
-        self.finish()
         self.publish('evolution_finished')
+        self.finish()
 
     @abstractmethod
     def execute(self, **kwargs):
@@ -321,7 +321,9 @@ class Algorithm(Operator):
 
             if self.termination_checker.should_terminate(self.population,
                                                          self.best_of_run_,
-                                                         self.generation_num):
+                                                         self.generation_num,
+                                                         np.max(np.array(fitness_values)),
+                                                         np.average(np.array(fitness_values))):
                 self.final_generation_ = gen
                 self.publish('after_generation')
                 break
@@ -361,9 +363,9 @@ class Algorithm(Operator):
         self.executor.shutdown()
 
     def update_gen(self, population, gen):
-		for subpopulation in population.sub_populations:
-			for ind in subpopulation.individuals:
-				ind.gen = gen@staticmethod
+        for subpopulation in population.sub_populations:
+            for ind in subpopulation.individuals:
+                ind.gen = gen@staticmethod
 
     @abstractmethod
     def generation_iteration(self, gen):
@@ -402,7 +404,7 @@ class Algorithm(Operator):
         """
         Finish the evolutionary run
         """
-        raise ValueError("finish is an abstract method in class Algorithm")
+        self.executor.shutdown()
 
     def set_generation_seed(self, seed):
         """
@@ -481,10 +483,11 @@ class Algorithm(Operator):
         return self.random_generator.randint(SEED_MIN_VALUE, SEED_MAX_VALUE)
 
     def should_terminate(self, population, best_of_run_, generation_num):
-		if isinstance(self.termination_checker, list):
-			return any([t.should_terminate(population, best_of_run_, generation_num) for t in self.termination_checker])
-		else:
-			return self.termination_checker.should_terminate(population, best_of_run_, generation_num)# Necessary for valid pickling, since SimpleQueue object cannot be pickled
+        if isinstance(self.termination_checker, list):
+            return any([t.should_terminate(population, best_of_run_, generation_num) for t in self.termination_checker])
+        else:
+            return self.termination_checker.should_terminate(population, best_of_run_, generation_num)# Necessary for valid pickling, since SimpleQueue object cannot be pickled
+
     def __getstate__(self):
         state = self.__dict__.copy()
         del state['executor']
