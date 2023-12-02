@@ -62,10 +62,6 @@ function_set = [(section, ["label", "section", "backwards_jmp", "section"], "sec
                [(func_opcode_operand_cl, ["op_shift", "reg", "section"], "section")] + \
                [(func_opcode_operand_1, ["op_shift", "reg", "section"], "section")] + \
                [(func_opcode_operand_cl, ["op_shift", "half_reg", "section"], "section")] + \
-               [(func_opcode_operand_1, ["op_shift", "half_reg", "section"], "section")]
-
-# [(func_opcode_operand_cl_WORD, ["op_shift", "address", "section"], "section")] + \
-#                [(func_opcode_operand_1_WORD, ["op_shift", "address", "section"], "section")] + \
-#[(func_opcode_operand_cl_BYTE, ["op_shift", "address", "section"], "section")] + \
-#                [(func_opcode_operand_1_BYTE, ["op_shift", "address", "section"], "section")]
-
+               [(func_opcode_operand_1, ["op_shift", "half_reg", "section"], "section")] + \
+               [(random_generator_lcg, ["reg", "section"], "section")] + \
+               [(random_generator_xor_shift, ["reg", "reg", "section"], "section")]

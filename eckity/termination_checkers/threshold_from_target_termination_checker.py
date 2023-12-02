@@ -47,7 +47,6 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
             True if the algorithm should terminate early, False otherwise.
         """
         # score should be the best, which means 1. Lifetime and written bytes don't have to
-        #return abs(best_individual.fitness_parts[0] - self.optimal) <= self.threshold and gen_number >= 4
         if abs(best_individual.fitness_parts[0] - self.optimal) <= self.threshold:
             if best_individual.fitness.get_pure_fitness() > self.prev_res:
                 self.prev_res = best_individual.fitness.get_pure_fitness()
@@ -60,7 +59,7 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
             self.strike = 0
 
         if self.strike >= 200 and abs(max - avg) < 0.25:
-            # If there wasn't a winning improvement for 100 generations, stop the evolution
+            # If there wasn't a winning improvement for 200 generations, stop the evolution
             return True
 
         return False

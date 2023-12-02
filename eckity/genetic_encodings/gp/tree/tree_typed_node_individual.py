@@ -65,8 +65,8 @@ class Tree(Individual):
 
         self.n_terminals = len(terminal_set)
 
-        self.categorized_terminals  = {term[1] for term in self.terminal_set}
-        self.categorized_terminals = {type:[term for term in self.terminal_set if type==term[1]] for type in
+        self.categorized_terminals = {term[1] for term in self.terminal_set}
+        self.categorized_terminals = {type: [term for term in self.terminal_set if type == term[1]] for type in
                                       self.categorized_terminals}
         self.categorized_functions = {func[2] for func in self.function_set}
         self.categorized_functions = {type: [func for func in self.function_set if type == func[2]] for type in

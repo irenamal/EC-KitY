@@ -105,7 +105,7 @@ def main():
         executor='process',
         max_workers=1,
         max_generation=2,
-        termination_checker=ThresholdFromTargetTerminationChecker(optimal=1, threshold=0.3), # if we play against 4 in the engine, > 0.25
+        termination_checker=ThresholdFromTargetTerminationChecker(optimal=1, threshold=0.3),
         statistics=BestAverageWorstStatistics(),
         random_seed=time(),
         root_path=root_path

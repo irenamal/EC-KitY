@@ -1,6 +1,9 @@
+import datetime
+import random
+
 opcodes_no_operands = ["nop", "stosw", "lodsw", "movsw", "cmpsw", "scasw", "pushf", "popf",
                        "lahf", "stosb", "lodsb", "movsb", "cmpsb", "scasb", "xlat", "xlatb",
-                       "cwd", "cmc", "clc", "stc", "cli", "sti", "cld", "std"]
+                       "cwd", "cbw", "cmc", "clc", "stc", "cli", "sti", "cld", "std"]
 opcodes_special = ["wait\nwait\nwait\nwait", "wait\nwait", "int 0x86", "int 0x87"]  # "nrg"=wait wait
 opcodes_repeats = ["rep", "repe", "repz", "repne", "repnz"]
 opcodes_jump = ["jmp", "jcxz", "je", "jne", "jp", "jnp", "jo", "jno", "jc", "jnc", "ja", "jna", "js", "jns", "jl",
@@ -16,11 +19,11 @@ opcodes_double_no_cost = ["xchg"]
 opcodes_shift = ["sal", "sar", "shl", "shr", "rol", "ror", "rcl", "rcr"]
 
 # not supported: jecxz, imul, idiv, push const, repnz and repnz with s/l/m
-general_registers = ["ax", "bx", "cx", "dx", "si", "di", "bp"]
+general_registers = ["ax", "bx", "cx", "dx", "si", "di", "bp", "sp"]
 general_half_registers = ["ah", "al", "bh", "bl", "ch", "cl", "dh", "dl"]
 addressing_registers = ["[bx]", "[si]", "[di]", "[bp]"]
-pop_registers = general_registers + ["WORD " + add_reg for add_reg in addressing_registers] #+ ["ds", "es", "ss"]
-push_registers = pop_registers + ["cs", "ds", "es", "ss"]
+pop_registers = general_registers + ["WORD " + add_reg for add_reg in addressing_registers] + ["ds", "es"]  #+, "ss"]
+push_registers = pop_registers + ["cs", "ss"]
 labels = []
 consts = ["0x"+str(2*i) for i in range(-10, 133)] + ["@start", "@end", "65535", "0xcccc"]
 
@@ -99,6 +102,22 @@ def func_backwords_jmp(f, opcode, *args):
 
 def func_forward_jmp(f, opcode, *args):
     func_opcode_openrand(f, opcode, "l" + str(len(labels)))
+
+
+def random_generator_lcg(f, op, *args):
+    func_opcode_two_operands(f, "mov", "ax", hex(int(datetime.datetime.now().timestamp())))
+    func_opcode_two_operands(f, "mov", op, 1664525)
+    func_opcode_openrand(f, "mul", op)
+    func_opcode_two_operands(f, "add", "ax", 1013904223)
+
+
+def random_generator_xor_shift(f, op1, op2, *args):
+    func_opcode_two_operands(f, "mov", op1, random.randint(0, 65535))
+    func_opcode_two_operands(f, "mov", op2, random.randint(0, 65535))
+    func_opcode_two_operands(f, "xor", op1, op2)
+    func_opcode_two_operands(f, "shl", op1, 7)
+    func_opcode_two_operands(f, "shr", op2, 5)
+    func_opcode_two_operands(f, "xor", op1, op2)
 
 
 def put_label(f, *args):

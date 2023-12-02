@@ -93,8 +93,8 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
                   The evaluated fitness value of the given individual.
                   The value ranges from 0 (worst case) to 1 (best case).
               """
-        #worker = str(threading.get_ident())
-        worker = str(os.getpid())
+        #worker = str(threading.get_ident())  # multithreading
+        worker = str(os.getpid())  # multiprocessing
         if not os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker)):
             os.mkdir(os.path.join(self.root_path, "corewars8086_" + worker))
         survivors_path = os.path.join(self.root_path, "corewars8086_" + worker, "survivors")
