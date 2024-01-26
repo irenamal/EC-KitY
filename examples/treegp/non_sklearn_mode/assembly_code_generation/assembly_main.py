@@ -73,8 +73,8 @@ def main():
     train_set = random.sample(group_survivors, k=int(0.7 * competition_size))  # train set
     test_set = random.sample([test for test in group_survivors if test not in train_set], k=int(0.3 * competition_size))  # test set
 
-    clear_folder(run_survivors_path)
-    copy_survivors(competition_survivors_path, run_survivors_path, train_set)
+    #clear_folder(run_survivors_path)
+    #copy_survivors(competition_survivors_path, run_survivors_path, train_set)
 
     # Initialize SimpleEvolution instance
     algo = SimpleEvolution(
@@ -82,7 +82,7 @@ def main():
                                            terminal_set=terminal_set,
                                            function_set=function_set,
                                            bloat_weight=0.00001),
-                      population_size=100,
+                      population_size=192,
                       # user-defined fitness evaluation method
                       evaluator=AssemblyEvaluator(root_path=root_path, nasm_path=nasm_path),
                       # this is a maximization problem (fitness is accuracy), so higher fitness is better
@@ -103,8 +103,8 @@ def main():
                       ),
         breeder=SimpleBreeder(),
         executor='process',
-        max_workers=1,
-        max_generation=2,
+        max_workers=64,
+        max_generation=2001,
         termination_checker=ThresholdFromTargetTerminationChecker(optimal=1, threshold=0.3),
         statistics=BestAverageWorstStatistics(),
         random_seed=time(),
@@ -115,8 +115,10 @@ def main():
     algo.evolve()
 
     # execute the best individual after the evolution process ends
-    clear_folder(run_survivors_path)
-    copy_survivors(competition_survivors_path, run_survivors_path, test_set)
+    #clear_folder(run_survivors_path)
+    #copy_survivors(competition_survivors_path, run_survivors_path, test_set)
+
+    print('total time:', time() - start_time)
 
     print("The winner's test run:")
     test_results = algo.population.sub_populations[0].evaluator.evaluate_individual(algo.best_of_run_copy_)
@@ -126,10 +128,12 @@ def main():
                                                                               test_results[3][0], test_results[3][1],
                                                                               test_results[3][2], test_results[3][3]))
 
-    algo.execute(open(os.path.join(root_path, "winners", "t_"+str(time())+"f_"+str(test_results[2])+'.asm'), 'w+'))  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
+    algo.execute(open(os.path.join(root_path, "winners", "t_" + str(time()) + "f_" + str(test_results[2]) +
+                                   "_s" + str(test_results[3][0]) + "_a" + str(test_results[3][1]) +
+                                   "_wb" + str(test_results[3][2]) + "_wr" + str(test_results[3][3]) + '.asm'), 'w+'))  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
                         # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
 
-    clear_folder(os.path.join(root_path, "survivors"))
+    #clear_folder(run_survivors_path)
 
     # Delete the folders created for each thread
     for file in os.listdir(root_path):

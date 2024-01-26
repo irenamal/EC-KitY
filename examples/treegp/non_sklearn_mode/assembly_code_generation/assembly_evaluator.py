@@ -137,7 +137,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         if os.path.exists(os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv")):
             os.remove(os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv"))
         proc = subprocess.Popen(
-            ["java", "-jar", os.path.join(self.root_path, "corewars8086_" + worker, self.engine),
+            ["java", "-Xmx1500m", "-jar", os.path.join(self.root_path, "corewars8086_" + worker, self.engine),
              survivors_path, os.path.join(self.root_path, "corewars8086_" + worker, "scores.csv")],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
@@ -169,6 +169,7 @@ class AssemblyEvaluator(SimpleIndividualEvaluator):
         return [fitness1, fitness2, fitness, norm_group]  # how many did the survivor beat * its partial score?
 
     def calculate_avg_fitness(self, individual):
+        # This function is relevant for more than one opponent
         all_train_set = os.listdir(os.path.join(self.root_path, "corewars8086", "survivors"))
         opponents = list(set([survivor[:-1] for survivor in all_train_set]))
 

@@ -9,6 +9,8 @@ from eckity.evaluators.population_evaluator import PopulationEvaluator
 from eckity.fitness.fitness import Fitness
 from eckity.individual import Individual
 
+SAVE_HISTORY = False
+
 
 class SimplePopulationEvaluator(PopulationEvaluator):
     def __init__(self, root_path=".", executor_method='map'):
@@ -49,34 +51,38 @@ class SimplePopulationEvaluator(PopulationEvaluator):
                 eval_results = self.executor.map(sp_eval.evaluate_individual, sub_population.individuals)
 
             # here all the individuals are evaluated, so if we want to save them all and not only the finals, here
-            gen_path = os.path.join(self.save_path, "gen" + str(gen))
-            if not os.path.exists(gen_path):
-                os.mkdir(gen_path)
+            if SAVE_HISTORY:
+                gen_path = os.path.join(self.save_path, "gen" + str(gen))
+                if not os.path.exists(gen_path):
+                    os.mkdir(gen_path)
 
+            csv_history = []
             for ind, fitness_scores in zip(sub_population.individuals, eval_results):
                 ind.set_evaluation(fitness_scores[0], fitness_scores[1], fitness_scores[2], fitness_scores[3])
 
-                ind_path = os.path.join(gen_path, "s" + str(ind.id) + "_f" + str(fitness_scores[2]) +
-                                        "_s" + str(fitness_scores[3][0]) + "_a" + str(fitness_scores[3][1]) +
-                                        "_wb" + str(fitness_scores[3][2]) + "_wr" + str(fitness_scores[3][3]))
-                if not os.path.exists(ind_path):
-                    os.mkdir(ind_path)
-                file1 = open(os.path.join(ind_path, "t1_f" + str(fitness_scores[0]) + '.asm'), 'w+')
-                ind.execute1(file1)
-                file1.close()
-                file2 = open(os.path.join(ind_path, "t2_f" + str(fitness_scores[1]) + '.asm'), 'w+')
-                ind.execute2(file2)
-                file2.close()
+                csv_history.append([gen, ind.id, fitness_scores[2], fitness_scores[0], fitness_scores[1]] +
+                                   fitness_scores[3])
 
-                summary = open(self.summary, "a+", newline='')
-                writer = csv.writer(summary)
-                if 0 == summary.tell():
-                    writer.writerow(
-                        ["generation", "survivor", "total_fitness", "tree1_fitness", "tree2_fitness", "score",
-                         "alive_time", "written_bytes", "writing_rate"])
-                writer.writerow(
-                    [gen, ind.id, fitness_scores[2], fitness_scores[0], fitness_scores[1]] + fitness_scores[3])
-                summary.close()
+                if SAVE_HISTORY:
+                    ind_path = os.path.join(gen_path, "s" + str(ind.id) + "_f" + str(fitness_scores[2]) +
+                                            "_s" + str(fitness_scores[3][0]) + "_a" + str(fitness_scores[3][1]) +
+                                            "_wb" + str(fitness_scores[3][2]) + "_wr" + str(fitness_scores[3][3]))
+                    if not os.path.exists(ind_path):
+                        os.mkdir(ind_path)
+                    file1 = open(os.path.join(ind_path, "t1_f" + str(fitness_scores[0]) + '.asm'), 'w+')
+                    ind.execute1(file1)
+                    file1.close()
+                    file2 = open(os.path.join(ind_path, "t2_f" + str(fitness_scores[1]) + '.asm'), 'w+')
+                    ind.execute2(file2)
+                    file2.close()
+
+            summary = open(self.summary, "a+", newline='')
+            writer = csv.writer(summary)
+            if 0 == summary.tell():
+                writer.writerow(["generation", "survivor", "total_fitness", "tree1_fitness", "tree2_fitness", "score",
+                                 "alive_time", "written_bytes", "writing_rate"])
+            writer.writerows(csv_history)
+            summary.close()
 
         # only one subpopulation in simple case
         individuals = population.sub_populations[0].individuals
@@ -88,5 +94,15 @@ class SimplePopulationEvaluator(PopulationEvaluator):
             if ind.fitness.better_than(ind, best_fitness, best_ind):
                 best_ind = ind
                 best_fitness = ind.fitness
+
+        if not SAVE_HISTORY:
+            best_file = open(os.path.join(self.save_path, "gen" + str(gen) + "_s" + str(best_ind.id) +
+                                          "_f" + str(best_fitness.get_pure_fitness()) +
+                                          "_s" + str(best_ind.fitness_parts[0]) +
+                                          "_a" + str(best_ind.fitness_parts[1]) +
+                                          "_wb" + str(best_ind.fitness_parts[2]) +
+                                          "_wr" + str(best_ind.fitness_parts[3]) + ".asm"), "w+")
+            best_ind.execute(best_file)
+            best_file.close()
 
         return best_ind
