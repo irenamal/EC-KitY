@@ -1,3 +1,5 @@
+import time
+
 from eckity.termination_checkers.termination_checker import TerminationChecker
 
 
@@ -24,6 +26,7 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
         self.higher_is_better = higher_is_better
         self.strike = 0
         self.prev_res = -1
+        self.adjusted = False
 
     def should_terminate(self, population, best_individual, gen_number, max=0, avg=0):
         """
@@ -46,6 +49,14 @@ class ThresholdFromTargetTerminationChecker(TerminationChecker):
         bool
             True if the algorithm should terminate early, False otherwise.
         """
+        # check for intended stop condition to change the opponent against the wining survivor.
+        # stop for 20 min when the average fitness is higher than 1.1 (score must be higher than 0.5)
+        if not self.adjusted and avg > 1.1:
+            print("Winning achieved, adjust the opponent")
+            time.sleep(60*20)
+            self.adjusted = True
+            return False
+
         # score should be the best, which means 1. Lifetime and written bytes don't have to
         if abs(best_individual.fitness_parts[0] - self.optimal) <= self.threshold:
             if best_individual.fitness.get_pure_fitness() > self.prev_res:
