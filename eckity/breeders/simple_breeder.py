@@ -4,10 +4,14 @@ from eckity.genetic_operators.selections.elitism_selection import ElitismSelecti
 
 class SimpleBreeder(Breeder):
     def __init__(self,
-                 events=None):
+                 events=None,
+                 ml_approximator=None,
+                 operators_pull=1):
         super().__init__(events=events)
         self.selected_individuals = []  # TODO why do we need this field? what about applied_individuals?
         self.best_of_run = []  # TODO this field isn't used
+        self.operators_pull = operators_pull
+        self.ml_approximator = ml_approximator
 
     def apply_breed(self, population, gen=0):
         """
@@ -65,7 +69,8 @@ class SimpleBreeder(Breeder):
         for operator in operator_seq:
             operator_arity = operator.get_operator_arity()
             for i in range(0, len(individuals_to_apply_on), operator_arity):
-                op_res = operator.apply_operator(individuals_to_apply_on[i:i + operator_arity], gen)
+                op_res = operator.apply_operator(individuals_to_apply_on[i:i + operator_arity], gen,
+                                                 self.ml_approximator, self.operators_pull)
                 individuals_to_apply_on[i:i + operator_arity] = op_res
         return individuals_to_apply_on
 

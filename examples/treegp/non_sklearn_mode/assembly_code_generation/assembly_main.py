@@ -4,6 +4,8 @@ from time import time
 import sys
 import os
 
+from eckity.evaluators.simple_population_evaluator import SimplePopulationEvaluator
+
 TYPED = True
 WINDOWS = False
 if not WINDOWS:
@@ -41,10 +43,10 @@ def move_survivors(path):
 
 def copy_survivors(src_path, dst_path, survivors_set):
     for survivor in survivors_set:
-        if os.path.exists(os.path.join(src_path, survivor+"1")):
-            shutil.copy(os.path.join(src_path, survivor+"1"), os.path.join(dst_path, survivor+"1"))
-        if os.path.exists(os.path.join(src_path, survivor+"2")):
-            shutil.copy(os.path.join(src_path, survivor+"2"), os.path.join(dst_path, survivor+"2"))
+        if os.path.exists(os.path.join(src_path, survivor + "1")):
+            shutil.copy(os.path.join(src_path, survivor + "1"), os.path.join(dst_path, survivor + "1"))
+        if os.path.exists(os.path.join(src_path, survivor + "2")):
+            shutil.copy(os.path.join(src_path, survivor + "2"), os.path.join(dst_path, survivor + "2"))
 
 
 def main():
@@ -101,6 +103,7 @@ def main():
                           (TournamentSelection(tournament_size=4, higher_is_better=True), 1)
                       ]
                       ),
+        population_evaluator=SimplePopulationEvaluator(root_path=root_path),
         breeder=SimpleBreeder(),
         executor='process',
         max_workers=64,
@@ -130,8 +133,9 @@ def main():
 
     algo.execute(open(os.path.join(root_path, "winners", "t_" + str(time()) + "f_" + str(test_results[2]) +
                                    "_s" + str(test_results[3][0]) + "_a" + str(test_results[3][1]) +
-                                   "_wb" + str(test_results[3][2]) + "_wr" + str(test_results[3][3]) + '.asm'), 'w+'))  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
-                        # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
+                                   "_wb" + str(test_results[3][2]) + "_wr" + str(test_results[3][3]) + '.asm'),
+                      'w+'))  # ax="ax", bx="bx", cx="cx", dx="dx", es="es", ds="ds", cs="cs", ss="ss",
+    # abx="[bx]", asi="[si]", adi="[di]", asp="[sp]", abp="[bp]")
 
     #clear_folder(run_survivors_path)
 

@@ -10,6 +10,8 @@ from eckity.breeders.simple_breeder import SimpleBreeder
 from eckity.evaluators.simple_population_evaluator import SimplePopulationEvaluator
 from eckity.termination_checkers.threshold_from_target_termination_checker \
     import ThresholdFromTargetTerminationChecker
+from examples.treegp.non_sklearn_mode.assembly_code_generation.ApproxML.approx_ml_pop_eval import \
+    ApproxMLPopulationEvaluator
 
 
 class SimpleEvolution(Algorithm):
@@ -94,7 +96,7 @@ class SimpleEvolution(Algorithm):
                  generation_num=0,
                  root_path="."):
 
-        population_evaluator = SimplePopulationEvaluator(root_path=root_path)
+        #population_evaluator = SimplePopulationEvaluator(root_path=root_path)
 
         if event_names is None:
             _event_names = ['before_eval', 'after_eval', 'before_breeding', 'after_breeding']
@@ -117,6 +119,9 @@ class SimpleEvolution(Algorithm):
         self.max_generation = max_generation
 
         self.final_generation_ = None
+
+        self.breeder.ml_approximator = population_evaluator if isinstance(population_evaluator,
+                                                                          ApproxMLPopulationEvaluator) else None
 
     def initialize(self):
         """
